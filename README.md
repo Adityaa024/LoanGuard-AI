@@ -162,6 +162,32 @@ Follow these simple steps to experience the complete end-to-end workflow:
 
 ## 🛠️ Technical Architecture & Stack Summary
 
+`mermaid
+graph TD
+    subgraph Frontend [React + Vite + Tailwind]
+        O[Data Operator View]
+        R[Exception Reviewer]
+        C[Data Consumer]
+    end
+    subgraph Backend [Node.js + Express]
+        API[REST API]
+        W[Warden Policy Engine]
+        AI[AI Copilot]
+    end
+    subgraph Database [SQLite]
+        DB[(Loan Database)]
+        AL[Cryptographic Audit Log]
+    end
+    O --> API
+    R --> API
+    C --> API
+    API --> W
+    API --> AI
+    W --> DB
+    W --> AL
+    AI --> AL
+``n
+
 - **Frontend:** React 18, Vite, Tailwind CSS, Framer Motion, Lucide Icons, React Three Fiber (3D pipeline visualizer).
 - **Backend:** Node.js, Express.js (REST API, SSE live event streaming).
 - **Security & RBAC:** Stateless JWT tokens (`jsonwebtoken`), input sanitization (`DOMPurify` + `JSDOM`).
