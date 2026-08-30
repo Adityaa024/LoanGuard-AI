@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+policies/authored.yaml
+web/node_modules/
+web/dist/
+data/*.json
+data/*.png
+data/*.jpg
+# …but ship the known-good demo statement images (containers may lack fonts to re-render them)
+!data/demo-statement-match.png
+!data/demo-statement-mismatch.png
+*.log
+.DS_Store
+.railway/

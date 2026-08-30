@@ -1,0 +1,60 @@
+version: 1
+domain: loan-data-validation
+locale: en-US
+timezone: UTC
+
+# ---- Agents ----
+agents:
+  system-uploader: { tier: system, scopeLimit: 0 }
+defaultScopeLimit: 0
+
+# ---- Rules ----
+rules:
+  negative_balance:
+    id: POL-BAL-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: >
+      Principal balance cannot be negative. If negative, it is escalated as a Critical exception.
+    onViolation: escalate
+
+  invalid_interest_rate:
+    id: POL-RATE-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: >
+      Interest rate cannot be negative (Critical error). 
+      Interest rate > 25% is flagged as High severity warning.
+    onViolation: escalate
+
+  missing_borrower:
+    id: POL-BOR-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: >
+      Borrower name cannot be empty.
+    onViolation: escalate
+
+  invalid_dates:
+    id: POL-DATE-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: >
+      Maturity date must be after origination date.
+    onViolation: escalate
+
+  invalid_state:
+    id: POL-STATE-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: >
+      Property state must be exactly 2 uppercase characters.
+    onViolation: escalate
+
+  duplicate_loan:
+    id: POL-DUP-001
+    appliesTo: [ingest_loan_record]
+    appealable: false
+    description: >
+      Duplicate Loan IDs are strictly forbidden (DENY). The entire record ingestion fails.
+    onViolation: deny
