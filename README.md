@@ -4,7 +4,7 @@
 
 ---
 
-## 🌟 What is this project about? (The Non-Tech Summary)
+## 🌟 What is this project about? 
 
 ### The Real-World Problem
 When banks, mortgage lenders, and financial institutions buy or sell bundles of loans (called **"Loan Tapes"**), the data is almost always messy:
