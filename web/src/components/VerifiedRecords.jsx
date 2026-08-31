@@ -329,7 +329,7 @@ export default function VerifiedRecords() {
               <input 
                 type="text" 
                 placeholder="Search ID, Borrower, State, Hash..." 
-                className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
+                className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all shadow-2xs"
                 value={globalFilter ?? ''}
                 onChange={e => setGlobalFilter(e.target.value)}
               />
@@ -346,7 +346,7 @@ export default function VerifiedRecords() {
                     setColumnFilters([...columnFilters.filter(f => f.id !== 'property_state'), { id: 'property_state', value: e.target.value }]);
                   }
                 }}
-                className="input-field py-1.5 px-2.5 text-xs w-auto bg-white"
+                className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all shadow-2xs cursor-pointer"
               >
                 <option value="ALL">All States ({availableStates.length})</option>
                 {availableStates.map(st => (
@@ -371,7 +371,7 @@ export default function VerifiedRecords() {
                   setSorting([{ id: 'interest_rate', desc: false }]);
                 }
               }}
-              className="input-field py-1.5 px-2.5 text-xs w-auto bg-white"
+              className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 outline-none transition-all shadow-2xs cursor-pointer"
             >
               <option value="DEFAULT">Sort: Ingestion Sequence</option>
               <option value="BAL_DESC">Balance: High to Low</option>
