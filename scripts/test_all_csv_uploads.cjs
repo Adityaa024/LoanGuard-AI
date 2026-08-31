@@ -175,7 +175,48 @@ async function runQaTests() {
     }
   }
 
-  // TEST 6: Verify Canonical Portfolio with Ananya Iyer Token
+  // TEST 6: Advanced AI Capabilities Matrix (All 7 PS Features)
+  console.log('\n🧠 [TEST] Executing All 7 AI Capabilities Matrix...');
+  
+  // AI Capability 4: Portfolio Batch Cluster Summary
+  const batchAiRes = await fetch(`${BASE_URL}/api/ai/batch-summary`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${reviewerToken}`, 'Content-Type': 'application/json' }
+  }).then(r => r.json());
+  console.log(`   [AI 4/7] Batch Summary: ${batchAiRes.data?.total_exceptions} exceptions clustered | Top issue identified: ${batchAiRes.data?.cluster_breakdown?.[0]?.rule_name || 'N/A'}`);
+  results.push({ name: 'AI Portfolio Cluster Summary', passed: batchAiRes.success && Array.isArray(batchAiRes.data?.cluster_breakdown) });
+
+  // AI Capability 5: Cross-Source Servicer Conflict Comparison
+  const conflictAiRes = await fetch(`${BASE_URL}/api/ai/compare-conflicts`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${reviewerToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      baseline_record: { loan_id: 'LN-CONF-01', current_balance: 245000, payment_status: 'Current', interest_rate: 4.5 },
+      secondary_record: { loan_id: 'LN-CONF-01', current_balance: 241200, payment_status: 'Delinquent', interest_rate: 4.5, last_updated_at: '2026-08-30' }
+    })
+  }).then(r => r.json());
+  console.log(`   [AI 5/7] Conflict Analyzer: Detected ${conflictAiRes.data?.conflict_count} discrepancies ($${conflictAiRes.data?.discrepancies?.[0]?.delta_amount} balance delta)`);
+  results.push({ name: 'AI Cross-Source Conflict Reconciliation', passed: conflictAiRes.success && conflictAiRes.data?.has_conflicts });
+
+  // AI Capability 6: Severity Classification Assistant
+  const severityAiRes = await fetch(`${BASE_URL}/api/ai/classify-severity`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${reviewerToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field: 'principal_balance', current_value: -150000, principal_balance: 150000 })
+  }).then(r => r.json());
+  console.log(`   [AI 6/7] Severity Classifier: Classified as [${severityAiRes.data?.classified_severity}] (Risk Score: ${severityAiRes.data?.risk_score}/100)`);
+  results.push({ name: 'AI Severity Classification Assistant', passed: severityAiRes.success && severityAiRes.data?.classified_severity === 'CRITICAL' });
+
+  // AI Capability 7: Natural Language Policy Rule Generator
+  const ruleGenAiRes = await fetch(`${BASE_URL}/api/ai/generate-rule`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${reviewerToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: 'Block loan tapes where interest rate exceeds 18.5%' })
+  }).then(r => r.json());
+  console.log(`   [AI 7/7] Rule Generator: Compiled "${ruleGenAiRes.data?.rule?.name}" -> Rule ID: ${ruleGenAiRes.data?.rule?.id} (Max Rate: ${ruleGenAiRes.data?.rule?.params?.max_rate}%)`);
+  results.push({ name: 'AI Natural Language Policy Compiler', passed: ruleGenAiRes.success && ruleGenAiRes.data?.rule?.id === 'POL-RATE-CAP' });
+
+  // TEST 7: Verify Canonical Portfolio with Ananya Iyer Token
   console.log('\n📊 [TEST] Inspecting Verified Portfolio with Ananya Iyer Token...');
   const loansRes = await fetch(`${BASE_URL}/api/loans?limit=5`, {
     headers: { 'Authorization': `Bearer ${consumerToken}` }
