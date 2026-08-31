@@ -672,55 +672,56 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   };
 
   return (
-    <div className="flex flex-col h-full gap-4 min-h-0">
+    <div className="saas-card p-0 flex flex-col h-full overflow-hidden border-slate-200/80 shadow-md bg-white">
       
-      {/* Context Card */}
-      <div className="saas-card p-4 flex flex-col flex-shrink-0 relative overflow-hidden">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <h3 className="text-base font-bold text-slate-900 font-mono flex items-center gap-2">
-              <span>{exc.loan_id}</span>
-              <SeverityBadge severity={exc.severity} />
-            </h3>
-            <span className="text-[11px] font-mono text-slate-400 px-2 py-0.5 bg-slate-100 rounded">
-              Rule: {exc.rule_id}
-            </span>
-          </div>
-
-          {/* Navigation Controls */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-400 font-mono mr-1">{position}</span>
-            <button 
-              onClick={onPrev} 
-              disabled={!hasPrev}
-              className="p-1 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors"
-              title="Previous Exception (↑ / K)"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={onNext} 
-              disabled={!hasNext}
-              className="p-1 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors"
-              title="Next Exception (↓ / J)"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+      {/* 1. Header Bar */}
+      <div className="px-5 py-3.5 border-b border-slate-200/80 bg-white flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5">
+          <h3 className="text-base font-bold text-slate-900 font-mono flex items-center gap-2">
+            <span>{exc.loan_id}</span>
+            <SeverityBadge severity={exc.severity} />
+          </h3>
+          <span className="text-[11px] font-mono text-slate-500 px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200/60">
+            Rule: {exc.rule_id}
+          </span>
         </div>
 
+        {/* Navigation Controls */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-slate-400 font-mono mr-1">{position}</span>
+          <button 
+            onClick={onPrev} 
+            disabled={!hasPrev}
+            className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors cursor-pointer"
+            title="Previous Exception (↑ / K)"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={onNext} 
+            disabled={!hasNext}
+            className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors cursor-pointer"
+            title="Next Exception (↓ / J)"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Scrollable Body Content */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        
         {/* Policy Violation Summary */}
-        <div className="mt-3 p-3 bg-rose-50/70 border border-rose-200/60 rounded-xl text-xs text-rose-900 flex items-start gap-2.5">
+        <div className="p-3.5 bg-rose-50/80 border border-rose-200/70 rounded-xl text-xs text-rose-900 flex items-start gap-3">
           <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold text-rose-950">{exc.rule_name || 'Policy Violation'}</div>
-            <div className="text-rose-700 mt-0.5">{exc.description}</div>
+            <div className="font-bold text-rose-950">{exc.rule_name || 'Policy Violation'}</div>
+            <div className="text-rose-700 mt-0.5 leading-relaxed">{exc.description}</div>
           </div>
         </div>
 
         {/* Side-by-Side Diff Inspector */}
-        <div className="mt-3 grid grid-cols-2 gap-3 p-3 bg-slate-50/90 rounded-xl border border-slate-200/70">
-          
+        <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
           {/* Current Flawed Value */}
           <div className="flex flex-col justify-between">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -733,14 +734,14 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           </div>
 
           {/* Corrected Value with Inline Edit */}
-          <div className="flex flex-col justify-between border-l border-slate-200 pl-3">
+          <div className="flex flex-col justify-between border-l border-slate-200/80 pl-3.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 Proposed Value
               </span>
               <button 
                 onClick={() => setEditMode(!editMode)}
-                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1"
+                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <Edit3 className="w-2.5 h-2.5" />
                 <span>{editMode ? 'Done' : 'Edit'}</span>
@@ -767,211 +768,198 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
             </div>
             <span className="text-[10px] text-emerald-600 mt-1 font-medium">Canonical Target</span>
           </div>
-
         </div>
-      </div>
 
-      {/* AI Assistant Explanation & Collateral Inspector Tabs */}
-      <div className="saas-card p-0 flex flex-col flex-1 min-h-0 border-indigo-200/70 bg-white overflow-hidden">
-        
-        {/* Card Header Sub-Tabs */}
-        <div className="px-4 py-2 bg-gradient-to-r from-indigo-50/80 to-purple-50/50 border-b border-indigo-100 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveSubTab('ai')}
-              className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
-                activeSubTab === 'ai' 
-                  ? 'bg-white text-indigo-900 shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>AI Copilot Diagnostics</span>
-            </button>
+        {/* AI Diagnostics & Collateral Sub-Tabs Card */}
+        <div className="rounded-xl border border-indigo-200/80 overflow-hidden bg-white shadow-2xs">
+          <div className="px-3.5 py-2 bg-gradient-to-r from-indigo-50/90 to-purple-50/60 border-b border-indigo-100 flex justify-between items-center">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setActiveSubTab('ai')}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activeSubTab === 'ai' 
+                    ? 'bg-white text-indigo-900 shadow-xs' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>AI Copilot Diagnostics</span>
+              </button>
 
-            <button
-              onClick={() => setActiveSubTab('collateral')}
-              className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
-                activeSubTab === 'collateral' 
-                  ? 'bg-white text-indigo-900 shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Building className="w-3.5 h-3.5 text-slate-500" />
-              <span>Collateral Details</span>
-            </button>
+              <button
+                onClick={() => setActiveSubTab('collateral')}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  activeSubTab === 'collateral' 
+                    ? 'bg-white text-indigo-900 shadow-xs' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Building className="w-3.5 h-3.5 text-slate-500" />
+                <span>Collateral Details</span>
+              </button>
+            </div>
+
+            {aiReview && activeSubTab === 'ai' && (
+              <div className="flex items-center gap-1.5 text-[11px] font-mono">
+                <span className="text-slate-500">Confidence:</span>
+                <span className="font-bold text-indigo-700 bg-indigo-100/90 px-2 py-0.5 rounded-full border border-indigo-200">
+                  {Math.round(aiReview.confidence * 100)}%
+                </span>
+              </div>
+            )}
           </div>
 
-          {aiReview && activeSubTab === 'ai' && (
-            <div className="flex items-center gap-2 text-[11px] font-mono">
-              <span className="text-slate-500">Confidence:</span>
-              <span className="font-bold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-full border border-indigo-200">
-                {Math.round(aiReview.confidence * 100)}%
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Card Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          
-          {activeSubTab === 'ai' ? (
-            loadingAi ? (
-              <div className="flex items-center gap-2 text-slate-500 text-xs py-8 justify-center">
-                <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin" />
-                <span>Analyzing record context, calculating math confidence, and sourcing suggestions...</span>
-              </div>
-            ) : aiReview ? (
-              <>
-                {/* Root Cause Explanation */}
-                <div>
-                  <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">
-                    Root Cause Explanation
-                  </h4>
-                  <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    {aiReview.explanation}
-                  </p>
+          <div className="p-4 space-y-3.5">
+            {activeSubTab === 'ai' ? (
+              loadingAi ? (
+                <div className="flex items-center gap-2 text-slate-500 text-xs py-6 justify-center">
+                  <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin" />
+                  <span>Analyzing policy violation & calculating remediation...</span>
                 </div>
-                
-                {/* AI Recommendation */}
-                <div>
-                  <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1">
-                    Recommended Action
-                  </h4>
-                  <div className="bg-indigo-50/50 border border-indigo-200/60 p-3 rounded-xl space-y-2">
-                    <p className="text-xs text-indigo-950 font-medium">
-                      {aiReview.recommendation}
+              ) : aiReview ? (
+                <>
+                  <div>
+                    <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                      Root Cause Explanation
+                    </h4>
+                    <p className="text-xs text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      {aiReview.explanation}
                     </p>
-                    
-                    {aiReview.suggested_value && (
-                      <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-indigo-100 shadow-xs mt-2">
-                        <div className="text-xs text-slate-600">
-                          <span>Suggested Value:</span>
-                          <span className="font-mono text-emerald-700 font-bold ml-1.5">
-                            {aiReview.suggested_value}
-                          </span>
-                        </div>
-                        <div className="flex gap-1.5">
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-1.5">
+                      Recommended Action
+                    </h4>
+                    <div className="bg-indigo-50/60 border border-indigo-200/70 p-3 rounded-xl space-y-2.5">
+                      <p className="text-xs text-indigo-950 font-medium leading-relaxed">
+                        {aiReview.recommendation}
+                      </p>
+                      
+                      {aiReview.suggested_value && (
+                        <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-indigo-100 shadow-xs">
+                          <div className="text-xs text-slate-600">
+                            <span>Suggested Value:</span>
+                            <span className="font-mono text-emerald-700 font-bold ml-1.5">
+                              {aiReview.suggested_value}
+                            </span>
+                          </div>
                           <button 
-                            className="btn-primary text-[10px] py-1 px-2.5" 
+                            className="btn-primary text-[10px] py-1 px-2.5 cursor-pointer" 
                             onClick={() => setCorrectedValue(aiReview.suggested_value)}
                           >
                             <Check className="w-3 h-3" />
                             <span>Apply Suggestion</span>
                           </button>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs text-slate-500 py-3">AI analysis unavailable for this rule.</div>
+              )
+            ) : (
+              <div className="space-y-3">
+                <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
+                  Underwriting & Tape Metadata
+                </h4>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase">Borrower</div>
+                    <div className="font-bold text-slate-800 mt-0.5">{loanData?.borrower_name || 'Unspecified'}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase">Credit Score</div>
+                    <div className="font-mono font-bold text-slate-800 mt-0.5">{loanData?.credit_score || '740'}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase">LTV Ratio</div>
+                    <div className="font-mono font-bold text-slate-800 mt-0.5">{loanData?.ltv_ratio || '75'}%</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase">Property Type</div>
+                    <div className="font-medium text-slate-800 mt-0.5">{loanData?.property_type || 'Single Family'}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase">Property State</div>
+                    <div className="font-bold text-slate-800 mt-0.5">{loanData?.property_state || 'US'}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="text-[10px] text-slate-400 font-semibold uppercase">Payment Status</div>
+                    <div className="font-medium text-emerald-700 mt-0.5">{loanData?.loan_status || 'Current'}</div>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="text-xs text-slate-500">AI analysis unavailable for this rule.</div>
-            )
-          ) : (
-            /* Collateral & Financial Metadata Tab */
-            <div className="space-y-3">
-              <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-bold mb-2">
-                Underwriting & Tape Metadata
-              </h4>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Borrower</div>
-                  <div className="font-bold text-slate-800 mt-0.5">{loanData?.borrower_name || 'Unspecified'}</div>
-                </div>
-
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Credit Score</div>
-                  <div className="font-mono font-bold text-slate-800 mt-0.5">{loanData?.credit_score || '740'}</div>
-                </div>
-
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">LTV Ratio</div>
-                  <div className="font-mono font-bold text-slate-800 mt-0.5">{loanData?.ltv_ratio || '75'}%</div>
-                </div>
-
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Property Type</div>
-                  <div className="font-medium text-slate-800 mt-0.5">{loanData?.property_type || 'Single Family'}</div>
-                </div>
-
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Property State</div>
-                  <div className="font-bold text-slate-800 mt-0.5">{loanData?.property_state || 'US'}</div>
-                </div>
-
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase">Payment Status</div>
-                  <div className="font-medium text-emerald-700 mt-0.5">{loanData?.loan_status || 'Current'}</div>
-                </div>
               </div>
-            </div>
-          )}
-
+            )}
+          </div>
         </div>
 
-        {/* Human Decision & Reviewer Controls */}
-        <div className="p-4 bg-slate-50/90 border-t border-slate-200 rounded-b-xl space-y-3">
+      </div>
+
+      {/* 3. Sticky Action Footer */}
+      <div className="p-4 bg-slate-50/95 border-t border-slate-200/90 shrink-0 space-y-3">
+        {/* Note Input & Presets */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+              Reviewer Note (Audit Trail)
+            </label>
+            <div className="flex gap-1.5 text-[10px]">
+              <button 
+                onClick={() => applyNotePreset('Verified against promissory note.')}
+                className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] hover:bg-slate-50 font-medium cursor-pointer"
+              >
+                + Verified Note
+              </button>
+              <button 
+                onClick={() => applyNotePreset('Applied AI suggestion after cross-checking data.')}
+                className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] hover:bg-slate-50 font-medium cursor-pointer"
+              >
+                + Accepted AI
+              </button>
+            </div>
+          </div>
           
-          {/* Note Input & Preset Tags */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                Reviewer Note (Audit Trail)
-              </label>
-              <div className="flex gap-1.5 text-[10px]">
-                <button 
-                  onClick={() => applyNotePreset('Verified against promissory note.')}
-                  className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[9px] hover:bg-slate-50"
-                >
-                  + Verified Note
-                </button>
-                <button 
-                  onClick={() => applyNotePreset('Applied AI suggestion after cross-checking data.')}
-                  className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[9px] hover:bg-slate-50"
-                >
-                  + Accepted AI
-                </button>
-              </div>
-            </div>
-            
-            <input 
-              type="text" 
-              placeholder="e.g. Verified against promissory note. Rate adjusted to 4.25%." 
-              className="input-field text-xs bg-white py-1.5"
-              value={note}
-              onChange={e => setNote(e.target.value)}
-            />
-          </div>
-
-          {/* Action Decision Buttons */}
-          <div className="flex items-center justify-between pt-1 gap-2">
-            <button 
-              className="btn-danger text-xs py-2 px-3 flex-1 justify-center" 
-              onClick={() => resolveAction('reject')} 
-              disabled={busy}
-            >
-              <XCircle className="w-3.5 h-3.5" />
-              <span>Reject Record</span>
-            </button>
-
-            <button 
-              className="btn-primary text-xs py-2 px-4 flex-2 justify-center shadow-indigo-500/10" 
-              onClick={() => resolveAction('approve')} 
-              disabled={busy}
-            >
-              {busy ? (
-                <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></div>
-              ) : (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              )}
-              <span>Approve & Sign Off (SHA-256)</span>
-            </button>
-          </div>
-
+          <input 
+            type="text" 
+            placeholder="e.g. Verified against promissory note. Rate adjusted to 4.25%." 
+            className="input-field text-xs bg-white py-2"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+          />
         </div>
 
+        {/* Action Decision Buttons */}
+        <div className="flex items-center justify-between gap-2.5">
+          <button 
+            className="btn-danger text-xs py-2.5 px-3.5 flex-1 justify-center cursor-pointer" 
+            onClick={() => resolveAction('reject')} 
+            disabled={busy}
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Reject Record</span>
+          </button>
+
+          <button 
+            className="btn-primary text-xs py-2.5 px-4 flex-2 justify-center shadow-indigo-500/15 cursor-pointer" 
+            onClick={() => resolveAction('approve')} 
+            disabled={busy}
+          >
+            {busy ? (
+              <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></div>
+            ) : (
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            )}
+            <span>Approve & Sign Off (SHA-256)</span>
+          </button>
+        </div>
       </div>
 
     </div>
