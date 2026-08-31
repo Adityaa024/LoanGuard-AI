@@ -11,7 +11,7 @@ export function ExceptionSeverityChart({ data }) {
   const chartData = [
     { name: 'Critical', value: data?.critical_exceptions || 0, color: '#e11d48', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' }, // rose-600
     { name: 'High', value: data?.high_exceptions || 0, color: '#d97706', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' }, // amber-600
-    { name: 'Medium', value: data?.medium_exceptions || 0, color: '#2563eb', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' }, // blue-600
+    { name: 'Medium', value: data?.medium_exceptions || 0, color: '#059669', bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200' }, // emerald-600
     { name: 'Low', value: data?.low_exceptions || 0, color: '#64748b', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' } // slate-500
   ].filter(d => d.value > 0);
 
@@ -25,15 +25,15 @@ export function ExceptionSeverityChart({ data }) {
 
   return (
     <div className="flex flex-col h-full justify-between">
-      <div className="flex-1 min-h-[140px]">
+      <div className="flex-1 min-h-[125px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={36}
-              outerRadius={56}
+              innerRadius={32}
+              outerRadius={48}
               paddingAngle={3}
               minAngle={12}
               dataKey="value"
@@ -53,15 +53,15 @@ export function ExceptionSeverityChart({ data }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Severity Breakdown Legend */}
-      <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
+      {/* Severity Breakdown Legend - 4 Column Layout */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-2 border-t border-slate-100">
         {chartData.map(item => (
-          <div key={item.name} className={`px-2 py-1 rounded-lg border ${item.bg} ${item.border} flex flex-col items-center justify-center`}>
+          <div key={item.name} className={`px-1.5 py-1 rounded-lg border ${item.bg} ${item.border} flex flex-col items-center justify-center text-center`}>
             <div className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-              <span className="text-[10px] font-semibold text-slate-700">{item.name}</span>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+              <span className="text-[10px] font-semibold text-slate-700 truncate">{item.name}</span>
             </div>
-            <span className={`text-[11px] font-bold font-mono ${item.text}`}>
+            <span className={`text-[11px] font-bold font-mono ${item.text} mt-0.5`}>
               {item.value.toLocaleString()}
             </span>
           </div>

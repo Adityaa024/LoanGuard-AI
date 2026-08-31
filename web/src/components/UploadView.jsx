@@ -460,7 +460,7 @@ export default function OperatorView() {
           </div>
 
           {summary && summary.open_exceptions > 0 && (
-            <div className="saas-card p-4 space-y-3 h-64 flex flex-col">
+            <div className="saas-card p-4 space-y-3 min-h-[270px] flex flex-col">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Exception Severity Breakdown</div>
               <div className="flex-1 min-h-0">
                 <ExceptionSeverityChart data={summary} />
