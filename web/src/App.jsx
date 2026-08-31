@@ -52,9 +52,28 @@ const USER_PROFILES = {
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [activeTab, setActiveTab] = useState('operator')
-  const [user, setUser] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return Boolean(localStorage.getItem('loanguard_token') && localStorage.getItem('loanguard_user'));
+  })
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('loanguard_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('loanguard_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u.role === 'reviewer') return 'reviewer';
+        if (u.role === 'consumer') return 'consumer';
+      }
+    } catch {}
+    return 'operator';
+  })
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [sseConnected, setSseConnected] = useState(true)
   const [stats, setStats] = useState({ total_loans: 0, open_exceptions: 0, verified_loans: 0, data_quality_score: 100 })
@@ -90,6 +109,9 @@ export default function App() {
   const handleLoginSuccess = (userData) => {
     setUser(userData)
     setIsAuthenticated(true)
+    try {
+      localStorage.setItem('loanguard_user', JSON.stringify(userData));
+    } catch {}
     if (userData.role === 'operator') setActiveTab('operator')
     if (userData.role === 'reviewer') setActiveTab('reviewer')
     if (userData.role === 'consumer') setActiveTab('consumer')
@@ -97,6 +119,7 @@ export default function App() {
 
   const handleSignOut = () => {
     localStorage.removeItem('loanguard_token')
+    localStorage.removeItem('loanguard_user')
     setIsAuthenticated(false)
     setUser(null)
   }
@@ -229,12 +252,12 @@ export default function App() {
                   </span>
                 )}
                 {tab.badge && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                     {tab.badge}
                   </span>
                 )}
                 {tab.pill && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500 text-white animate-pulse">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white shadow-2xs">
                     {tab.pill}
                   </span>
                 )}
@@ -248,8 +271,7 @@ export default function App() {
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               <span className="text-[11px] font-medium text-slate-600">Policy Engine Active</span>
             </div>

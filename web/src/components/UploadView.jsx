@@ -28,6 +28,7 @@ export default function OperatorView() {
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedBatch, setCopiedBatch] = useState(null);
   const fileInput = useRef(null);
@@ -45,6 +46,8 @@ export default function OperatorView() {
       if (histRes.success) setHistory(histRes.data);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoadingData(false);
     }
   }, []);
 
@@ -179,7 +182,22 @@ export default function OperatorView() {
       </div>
 
       {/* Enterprise KPI Metrics Bar */}
-      {summary && (
+      {loadingData ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(idx => (
+            <div key={idx} className="saas-card p-4 flex flex-col justify-between h-28 bg-slate-50/70 border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="h-3 w-24 bg-slate-200 rounded-md"></div>
+                <div className="h-7 w-7 bg-slate-200 rounded-lg"></div>
+              </div>
+              <div className="space-y-2 mt-2">
+                <div className="h-6 w-16 bg-slate-200 rounded-md"></div>
+                <div className="h-2 w-full bg-slate-200 rounded-full"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : summary ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* Quality Score */}
@@ -270,7 +288,7 @@ export default function OperatorView() {
           </div>
 
         </div>
-      )}
+      ) : null}
 
       {/* Main Grid: Upload Dropzone & Preset Benchmarks (Left) + Lineage History (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
@@ -504,7 +522,13 @@ export default function OperatorView() {
           
           {/* Batch Records Table */}
           <div className="flex-1 overflow-auto">
-            {filteredHistory.length === 0 ? (
+            {loadingData ? (
+              <div className="flex flex-col items-center justify-center h-full p-12 text-slate-500">
+                <RefreshCw className="w-6 h-6 animate-spin text-indigo-600 mb-2" />
+                <p className="text-xs font-semibold text-slate-700">Loading historical batches & lineage...</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Fetching ingestion provenance records</p>
+              </div>
+            ) : filteredHistory.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-12 text-slate-400">
                 <Database className="w-10 h-10 mb-3 text-slate-300 stroke-[1.5]" />
                 <p className="text-xs font-medium">No batch history recorded yet.</p>

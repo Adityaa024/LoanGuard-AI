@@ -363,8 +363,8 @@ export default function ExceptionQueue() {
                         onClick={() => setSelectedExc(exc)}
                         className={`cursor-pointer transition-colors group ${
                           isSelected 
-                            ? 'bg-indigo-50/80 border-l-3 border-indigo-600' 
-                            : 'hover:bg-slate-50/80'
+                            ? 'bg-indigo-50/80 border-l-[3px] border-l-indigo-600' 
+                            : 'hover:bg-slate-50/80 border-l-[3px] border-l-transparent'
                         }`}
                       >
                         <td className="px-3 py-2.5 text-center" onClick={(e) => toggleSelectOne(exc.id, e)}>
@@ -411,7 +411,6 @@ export default function ExceptionQueue() {
       {selectedExc ? (
         <div className="flex-1 flex flex-col min-w-0 min-h-0">
           <ReviewerWorkbench 
-            key={selectedExc.id} 
             exc={selectedExc} 
             onResolved={() => {
               toast.success("Exception Resolved", `Loan ${selectedExc.loan_id} updated and signed.`);
@@ -607,45 +606,60 @@ function SeverityBadge({ severity }) {
 }
 
 function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, position }) {
-  const [aiReview, setAiReview] = useState(null);
+  const aiCache = useRef(new Map());
+  const [aiReview, setAiReview] = useState(() => aiCache.current.get(exc.id) || null);
   const [loanData, setLoanData] = useState(null);
-  const [loadingAi, setLoadingAi] = useState(true);
-  const [correctedValue, setCorrectedValue] = useState(exc.current_value || '');
+  const [loadingAi, setLoadingAi] = useState(() => !aiCache.current.has(exc.id));
+  const [correctedValue, setCorrectedValue] = useState(exc.suggested_value || exc.current_value || '');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('ai'); // 'ai' or 'collateral'
   const [suggestionApplied, setSuggestionApplied] = useState(false);
 
-  // Fetch AI review & full loan details
+  // Fetch AI review & full loan details smoothly
   useEffect(() => {
-    setLoadingAi(true);
     setSuggestionApplied(false);
-    const token = localStorage.getItem('loanguard_token');
-    const authHeaders = {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    };
-    
-    // AI Review
-    fetch('/api/ai-review', {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({ exception_id: exc.id })
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          setAiReview(d.data);
-          if (d.data.suggested_value !== null && d.data.suggested_value !== undefined) {
-            setCorrectedValue(d.data.suggested_value);
-          }
-        }
-        setLoadingAi(false);
+    setCorrectedValue(exc.suggested_value || exc.current_value || '');
+    setEditMode(false);
+
+    if (aiCache.current.has(exc.id)) {
+      const cached = aiCache.current.get(exc.id);
+      setAiReview(cached);
+      setLoadingAi(false);
+      if (cached.suggested_value !== null && cached.suggested_value !== undefined) {
+        setCorrectedValue(cached.suggested_value);
+      }
+    } else {
+      setLoadingAi(true);
+      const token = localStorage.getItem('loanguard_token');
+      const authHeaders = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+      
+      // AI Review
+      fetch('/api/ai-review', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ exception_id: exc.id })
       })
-      .catch(() => setLoadingAi(false));
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            aiCache.current.set(exc.id, d.data);
+            setAiReview(d.data);
+            if (d.data.suggested_value !== null && d.data.suggested_value !== undefined) {
+              setCorrectedValue(d.data.suggested_value);
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingAi(false));
+    }
 
     // Loan Detail for Context
+    const token = localStorage.getItem('loanguard_token');
     fetch(`/api/loans/${exc.loan_id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
@@ -654,7 +668,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
         if (d.success) setLoanData(d.data);
       })
       .catch(() => {});
-  }, [exc.id, exc.current_value, exc.loan_id]);
+  }, [exc.id, exc.current_value, exc.loan_id, exc.suggested_value]);
 
   const handleApplySuggestion = (val) => {
     if (val === null || val === undefined) return;
@@ -760,7 +774,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           </div>
 
           {/* Corrected Value with Inline Edit */}
-          <div className={`flex flex-col justify-between border-l border-slate-200/80 pl-3.5 transition-all duration-300 ${suggestionApplied ? 'bg-emerald-50/80 ring-2 ring-emerald-500/40 rounded-r-lg p-2' : ''}`}>
+          <div className={`flex flex-col justify-between border-l border-slate-200/80 pl-3.5 transition-colors duration-200 ${suggestionApplied ? 'bg-emerald-50/80 rounded-r-lg' : ''}`}>
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <span>Proposed Value</span>
