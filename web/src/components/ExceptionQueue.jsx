@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, 
@@ -605,11 +605,12 @@ function SeverityBadge({ severity }) {
   );
 }
 
+const globalAiCache = new Map();
+
 function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, position }) {
-  const aiCache = useRef(new Map());
-  const [aiReview, setAiReview] = useState(() => aiCache.current.get(exc.id) || null);
+  const [aiReview, setAiReview] = useState(() => globalAiCache.get(exc.id) || null);
   const [loanData, setLoanData] = useState(null);
-  const [loadingAi, setLoadingAi] = useState(() => !aiCache.current.has(exc.id));
+  const [loadingAi, setLoadingAi] = useState(() => !globalAiCache.has(exc.id));
   const [correctedValue, setCorrectedValue] = useState(exc.suggested_value || exc.current_value || '');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -623,8 +624,8 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
     setCorrectedValue(exc.suggested_value || exc.current_value || '');
     setEditMode(false);
 
-    if (aiCache.current.has(exc.id)) {
-      const cached = aiCache.current.get(exc.id);
+    if (globalAiCache.has(exc.id)) {
+      const cached = globalAiCache.get(exc.id);
       setAiReview(cached);
       setLoadingAi(false);
       if (cached.suggested_value !== null && cached.suggested_value !== undefined) {
@@ -647,7 +648,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
         .then(r => r.json())
         .then(d => {
           if (d.success) {
-            aiCache.current.set(exc.id, d.data);
+            globalAiCache.set(exc.id, d.data);
             setAiReview(d.data);
             if (d.data.suggested_value !== null && d.data.suggested_value !== undefined) {
               setCorrectedValue(d.data.suggested_value);
