@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #0f172a;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,9 +7,82 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background-color: #0f172a;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        color: #f8fafc;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      .pre-loader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        width: 100%;
+        background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 70%);
+        gap: 1.5rem;
+      }
+      .pre-loader-logo {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 35px rgba(99, 102, 241, 0.4);
+        position: relative;
+        animation: pulseLogo 2s infinite ease-in-out;
+      }
+      .pre-loader-spinner {
+        width: 24px;
+        height: 24px;
+        border: 2.5px solid rgba(255, 255, 255, 0.2);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .pre-loader-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        text-align: center;
+      }
+      .pre-loader-sub {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pulseLogo {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 35px rgba(99, 102, 241, 0.3); }
+        50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(99, 102, 241, 0.6); }
+      }
+    </style>
   </head>
   <body class="bg-slate-50 font-sans antialiased text-slate-900">
-    <div id="root"></div>
+    <div id="root">
+      <div class="pre-loader-container">
+        <div class="pre-loader-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div style="text-align: center;">
+          <div class="pre-loader-title">LoanGuard<span style="color: #818cf8;">.AI</span></div>
+          <div class="pre-loader-sub" style="margin-top: 4px;">Securitization & Verification Copilot</div>
+        </div>
+        <div class="pre-loader-spinner" style="margin-top: 0.5rem;"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
