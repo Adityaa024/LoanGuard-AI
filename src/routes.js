@@ -74,11 +74,19 @@ export async function registerRoutes(app, { ROOT }) {
   app.post('/api/upload', requireRole(['operator']), upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, error: 'no file' })
     try {
+      const fileHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex')
+      const db = await getDb()
+
+      // Idempotency check
+      const existingBatch = await db.get(`SELECT id FROM upload_batches WHERE file_hash = ?`, [fileHash])
+      if (existingBatch) {
+        return res.status(409).json({ success: false, error: 'Duplicate file detected. This exact batch has already been ingested.', code: 'DUPLICATE_BATCH' })
+      }
+
       const records = parse(req.file.buffer, { columns: true, skip_empty_lines: true })
       
-      const db = await getDb()
       const batchId = `batch_${Date.now()}`
-      await db.run(`INSERT INTO upload_batches (id, filename, uploaded_by) VALUES (?, ?, ?)`, [batchId, req.file.originalname, 'System Uploader'])
+      await db.run(`INSERT INTO upload_batches (id, filename, file_hash, uploaded_by) VALUES (?, ?, ?, ?)`, [batchId, req.file.originalname, fileHash, 'System Uploader'])
       
       let validCount = 0
       let exceptionCount = 0
@@ -187,7 +195,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
 
   // ---- Summary API ----
-  app.get('/api/summary', async (req, res) => {
+  const handleSummary = async (req, res) => {
     try {
       const db = await getDb()
       const totalLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status != 'pending'`)).count
@@ -210,7 +218,9 @@ export async function registerRoutes(app, { ROOT }) {
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
-  })
+  }
+  app.get('/api/summary', handleSummary)
+  app.get('/summary', handleSummary)
 
   app.get('/api/uploads', async (req, res) => {
     try {
@@ -465,6 +475,71 @@ export async function registerRoutes(app, { ROOT }) {
           prompt: `Analyze exception ${exc.rule_id} on field ${exc.field} with value "${exc.current_value}"`,
           timestamp: new Date().toISOString()
         } 
+      })
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message })
+    }
+  })
+
+  // ---- AI Validation Rule Synthesizer ----
+  app.post('/api/ai/rules/generate', requireRole(['operator']), async (req, res) => {
+    try {
+      const { description } = req.body
+      if (!description) return res.status(400).json({ success: false, error: 'Rule description required' })
+      
+      const descLower = description.toLowerCase()
+      let field = 'interest_rate'
+      let operator = 'lessThanOrEqual'
+      let value = 10.0
+      let errorMessage = 'Generated Rule Violation'
+      let severity = 'medium'
+
+      // Smart simulation for AI translation
+      if (descLower.includes('state') || descLower.includes('ny')) {
+        field = 'property_state'
+        operator = 'in'
+        value = ['NY', 'CA', 'TX']
+        errorMessage = 'Invalid state location based on generated policy'
+        severity = 'high'
+      } else if (descLower.includes('balance') || descLower.includes('principal')) {
+        field = 'current_balance'
+        operator = 'lessThanOrEqual'
+        value = 'original_principal'
+        errorMessage = 'Balance discrepancy detected'
+        severity = 'critical'
+      } else if (descLower.includes('interest') || descLower.includes('rate')) {
+        field = 'interest_rate'
+        operator = 'lessThan'
+        value = 15.0
+        errorMessage = 'Interest rate exceeds policy limits'
+        severity = 'high'
+      } else {
+        field = 'loan_status'
+        operator = 'equals'
+        value = 'Active'
+      }
+
+      const generatedRule = {
+        id: `POL-AI-${Math.floor(Math.random() * 1000)}`,
+        name: description.substring(0, 40) + (description.length > 40 ? '...' : ''),
+        severity,
+        eval: `(record) => record.${field} !== undefined`, // Placeholder for UI
+        field,
+        operator,
+        value,
+        errorMessage
+      }
+
+      // We could add this to our in-memory VALIDATION_RULES here, but for safety in the demo, we just return it to the frontend to review and "Activate".
+
+      res.json({
+        success: true,
+        data: {
+          rule: generatedRule,
+          explanation: `The Copilot interpreted your request and mapped "${description}" to field "${field}" using operator "${operator}" against value "${Array.isArray(value) ? value.join(', ') : value}".`,
+          model: 'LoanGuard-AI Rule Synthesizer v1.0',
+          testCode: `test('should flag when ${field} fails condition', () => { ... })`
+        }
       })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })

@@ -27,6 +27,7 @@ export async function getDb() {
     CREATE TABLE IF NOT EXISTS upload_batches (
       id TEXT PRIMARY KEY,
       filename TEXT NOT NULL,
+      file_hash TEXT UNIQUE,
       uploaded_by TEXT NOT NULL,
       uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       status TEXT DEFAULT 'completed'
@@ -135,6 +136,18 @@ export async function getDb() {
         // column may already exist
       }
     }
+  }
+
+  // Migration for upload_batches
+  try {
+    await dbInstance.exec(`ALTER TABLE upload_batches ADD COLUMN file_hash TEXT;`)
+  } catch (e) {
+    // ignore if already exists
+  }
+  try {
+    await dbInstance.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_upload_batches_file_hash ON upload_batches(file_hash);`)
+  } catch (e) {
+    // ignore
   }
 
   return dbInstance

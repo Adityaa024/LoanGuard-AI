@@ -1,43 +1,148 @@
 # 🏦 LoanGuard-AI — Intelligent Loan Tape Securitization & Continuous Verification Copilot
 
-> **Full-Stack Implementation for the Intain Loan Data Verification Challenge**  
-> An AI-Assisted, Cryptographically Verified Governance Platform for Financial Loan Tapes.
+> **Enterprise-Grade Full-Stack Implementation for the Intain Loan Data Verification Challenge**  
+> An AI-Assisted, Cryptographically Verified Governance & Audit Platform for Structured Finance & Loan Tapes.
 
 ---
 
 ## 🌟 Executive Overview & Problem Context
 
-In private debt securitization, structured finance, and secondary loan trading, loan tape accuracy is paramount. Raw loan tapes from originating servicers frequently contain formatting defects, mathematical inconsistencies, inverted date fields, and conflicting reports.
+In private debt securitization, structured finance, and secondary loan trading, loan tape data integrity is paramount. Raw loan tapes provided by originating servicers frequently contain formatting defects, inverted dates, usurious interest rates, mathematical inconsistencies, and cross-source reporting conflicts.
 
-**LoanGuard-AI** is an enterprise-grade full-stack verification platform that acts as an automated quality gatekeeper and diagnostic copilot:
+**LoanGuard-AI** is an enterprise verification platform functioning as an automated quality gatekeeper, diagnostic copilot, and tamper-evident audit ledger:
 
 ```
-┌────────────────────────┐      ┌─────────────────────────┐      ┌─────────────────────────┐
-│ 1. Data Ingestion      │ ---> │ 2. AI Copilot Review    │ ---> │ 3. Cryptographic Seal   │
-│ Ingest messy CSV tapes │      │ Explains errors & aids  │      │ Stamps an unbreakable   │
-│ & catches anomalies    │      │ human decision makers   │      │ SHA-256 digital receipt │
-└────────────────────────┘      └─────────────────────────┘      └─────────────────────────┘
+┌────────────────────────────────┐      ┌────────────────────────────────┐      ┌────────────────────────────────┐
+│      1. Ingestion & Gate       │ ---> │    2. AI Copilot Workbench     │ ---> │    3. Cryptographic Seal       │
+│  Fast streaming CSV ingestion  │      │  Deep diagnostics, confidence  │      │  Immutable SHA-256 digital     │
+│  & deterministic Zod policies  │      │  scoring & governed overrides  │      │  receipt & Merkle audit chain  │
+└────────────────────────────────┘      └────────────────────────────────┘      └────────────────────────────────┘
 ```
 
-1. **Deterministic Quality Gatekeeper:** Evaluates incoming loan tapes against strict financial policies (Zod schemas + `LocalPolicyEngine`) in under 2 seconds.
-2. **AI Diagnostic Copilot:** Explains anomalies in plain language, computes confidence scores, and suggests verified field corrections.
-3. **Strict Human-in-the-Loop Governance:** AI suggestions never directly mutate the database without explicit reviewer authorization.
+1. **Deterministic Quality Gatekeeper:** Evaluates incoming loan tapes against strict financial policies (`schema.js` Zod schemas + `policies.yaml` / `LocalPolicyEngine`) in sub-2-second streaming transactions.
+2. **AI Diagnostic Copilot:** Explains violations in plain language, computes confidence scores (75%–95%), and suggests verified field corrections.
+3. **Strict Human-in-the-Loop Governance:** AI suggestions never directly mutate the database without explicit reviewer sign-off. All overrides are sanitized with `DOMPurify` and whitelisted before execution.
 4. **Tamper-Evident Cryptographic Ledger:** Every upload, AI diagnostic check, reviewer override, and export is chained with sequential SHA-256 hashes.
+5. **Real-Time 3D Data Pipeline Visualizer:** Interactive WebGL/Three.js visualizer rendering live data streams, ingestion nodes, and policy enforcement beams.
 
 ---
 
 ## 📋 Problem Statement Compliance Matrix (Modules A–H)
 
-| Module | Name | Implementation Summary | Primary Persona |
-| :--- | :--- | :--- | :--- |
-| **Module A** | **Ingestion Engine** | Multipart CSV parser (`csv-parse`), header mapping, data normalization, batch metadata tracking, error row reporting. | Data Operator |
-| **Module B** | **Validation Engine** | Two-tier validation (`schema.js` Zod schemas + `policies.yaml` business rules), 15 intentional defect interceptors. | System |
-| **Module C** | **Exception Queue** | Interactive queue with severity badges (Critical, High, Medium, Low), loan ID search, rule filter, multi-select bulk operations. | Exception Reviewer |
-| **Module D** | **AI Review Assistant** | 7 distinct AI capabilities: root cause explanation, confidence scoring, repair recommendation, cluster summary, conflict comparison, severity classification, rule generator. | Exception Reviewer |
-| **Module E** | **Governed Resolution** | Reviewer manual override seam, field-whitelisted SQL updates, `DOMPurify` XSS protection, audit logging. | Exception Reviewer |
-| **Module F** | **Canonical Portfolio** | Searchable verified ledger with digital SHA-256 seal, state filtering, and governed CSV/JSON streaming exports. | Data Consumer |
-| **Module G** | **Dashboards & KPIs** | Real-time compliance score bar, exception distribution widgets, live Server-Sent Events (`/events`). | All Personas |
-| **Module H** | **REST API Surface** | Express.js REST API with JWT role-based access control (`/api/upload`, `/api/exceptions`, `/api/loans`, `/api/audit/verify`, `/api/summary`). | All Clients |
+| Module | Name | Implementation Details | Primary Persona | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **Module A** | **Ingestion Engine** | Multipart CSV parser (`csv-parse`), dynamic header normalization, batch metadata tracking, error row isolation. | Data Operator | **✅ 100%** |
+| **Module B** | **Validation Engine** | Two-tier validation (`schema.js` Zod schemas + `policies.yaml` business rules), 15 intentional defect interceptors. | System / Warden | **✅ 100%** |
+| **Module C** | **Exception Queue** | Interactive workbench with severity filters (Critical, High, Medium, Low), search, keyboard navigation (`J`/`K`), bulk actions. | Exception Reviewer | **✅ 100%** |
+| **Module D** | **AI Review Assistant** | 7 AI features: root cause explainer, confidence scoring, repair recommendation, cluster summary, conflict comparison, severity classification, rule generator. | Exception Reviewer | **✅ 100%** |
+| **Module E** | **Governed Resolution** | Reviewer manual override seam, field-whitelisted SQL updates, server-side `DOMPurify` XSS protection, immutable audit chaining. | Exception Reviewer | **✅ 100%** |
+| **Module F** | **Canonical Portfolio** | Searchable verified ledger with digital SHA-256 seal, state filtering, and governed streaming CSV/JSON exports. | Data Consumer | **✅ 100%** |
+| **Module G** | **Dashboards & Visualizer** | Real-time compliance KPIs, exception severity breakdown, 3D WebGL pipeline visualizer (`Three.js` / `@react-three/fiber`), live SSE (`/events`). | All Personas | **✅ 100%** |
+| **Module H** | **REST API Surface** | Express.js REST API with JWT role-based access control (`/api/upload`, `/api/exceptions`, `/api/loans`, `/api/audit/verify`, `/api/summary`). | All Clients | **✅ 100%** |
+
+---
+
+## 🏗️ Architecture & Technical Stack
+
+### High-Level Architecture Diagram
+
+```
+                              ┌──────────────────────────────────────────────┐
+                              │            React 18 + Tailwind SPA           │
+                              │ (Operator, Reviewer, Consumer, 3D Hive Views)│
+                              └──────────────────────┬───────────────────────┘
+                                                     │ JWT Authenticated HTTP & SSE
+                                                     ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                          Express.js REST API Backend                                       │
+├──────────────────────────────┬──────────────────────────────┬──────────────────────────────────────────────┤
+│      Ingestion Module        │     Policy Engine (Warden)   │             AI Copilot Service               │
+│  - csv-parse streaming       │  - Zod structural schemas    │  - Root cause diagnostic explanations        │
+│  - Field normalizers         │  - YAML declarative rules    │  - Statistical confidence calculation        │
+│  - Batch lineage tracking    │  - Dynamic rule compiler     │  - Cluster summaries & conflict resolution   │
+├──────────────────────────────┴──────────────────────────────┴──────────────────────────────────────────────┤
+│                                      Cryptographic & Security Layer                                        │
+│  - SHA-256 Hash Chaining (GENESIS -> Block N)  |  DOMPurify XSS Sanitization  |  Field Whitelist Update   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                         Storage & Persistence Layer                                        │
+│                        SQLite3 (`loans`, `exceptions`, `upload_batches`, `audit_logs`)                      │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Core Technologies
+
+- **Frontend:** React 18, Vite, Tailwind CSS, Framer Motion, Lucide Icons, Recharts, `@react-three/fiber` & Three.js (3D Visualizer).
+- **Backend:** Node.js (ESM), Express.js, SQLite3 / `sqlite` (with WAL mode & indexed queries), Zod, `csv-parse`, `dompurify`, `jsonwebtoken`.
+- **Cryptographic Assurance:** SHA-256 Merkle-like chain with canonical payload signatures `SHA256(loan_id | borrower | principal | rate | origination | maturity)`.
+- **Live Streams:** Server-Sent Events (SSE) `/events` for zero-polling real-time updates across clients.
+
+---
+
+## 📂 Codebase Directory Map & Walkthrough
+
+```
+d:/intain/
+├── src/                               # Backend Application Logic
+│   ├── server.js                      # Express server entry point, static asset serving, port configuration
+│   ├── routes.js                      # Central REST API routes & SSE event dispatchers
+│   ├── system.js                      # System bootstrapper and dependency injection
+│   ├── audit/                         # Cryptographic hash chain & audit ledger
+│   │   └── auditLog.js                # SHA-256 sequential hashing & genesis verification
+│   ├── db/                            # SQLite connection & database migrations
+│   │   └── index.js                   # Table schema definitions, indices, and seed queries
+│   ├── engine/                        # Validation & rule evaluation
+│   │   ├── schema.js                  # Zod validation schemas for loan tapes & mutations
+│   │   └── validator.js               # Multi-pass anomaly detector
+│   ├── guard/                         # Access control & governance guards
+│   │   ├── policyTypes.js             # Policy enum definitions & decision types
+│   │   └── warden.js                  # Governance seam & kill-switch authorization
+│   ├── llm/                           # AI Copilot engine & diagnostic providers
+│   │   └── explainer.js               # Diagnostic generation, repair synthesis & cluster clustering
+│   ├── policy/                        # Policy compiler & dynamic rule engine
+│   │   ├── author.js                  # Live policy authoring & hot-reload seam
+│   │   ├── compiler.js                # Natural language to YAML policy compiler
+│   │   └── engine.js                  # LocalPolicyEngine runtime
+│   └── events/                        # Server-Sent Events (SSE) broadcaster
+│       └── broker.js                  # Pub/Sub event bus for live UI updates
+│
+├── web/                               # Modern React 18 Frontend
+│   ├── index.html                     # SPA entry point with Google Fonts
+│   ├── package.json                   # Web dependencies & Vite build scripts
+│   ├── src/
+│   │   ├── App.jsx                    # Root app shell, navigation, persona switching, modals
+│   │   ├── main.jsx                   # React root mount, global JWT fetch interceptor
+│   │   ├── ToastContext.jsx           # Global notification toast provider
+│   │   ├── api.js                     # API client utilities and SSE hooks
+│   │   ├── Hive3D.jsx                 # 3D WebGL pipeline visualizer (Three.js/Fiber)
+│   │   ├── styles.css                 # Custom scrollbars, glassmorphism & utility classes
+│   │   ├── design-system.css          # Design tokens, color palettes & badges
+│   │   └── components/
+│   │       ├── LoginView.jsx          # 1-Click persona launcher & JWT credentials login
+│   │       ├── UploadView.jsx         # Ingestion studio, drag-drop, preset benchmarks, lineage
+│   │       ├── ExceptionQueue.jsx     # Reviewer workbench, side-by-side diff, AI drawer, batch resolve
+│   │       ├── VerifiedRecords.jsx    # Canonical portfolio ledger, SHA-256 digital seals, CSV export
+│   │       └── Charts.jsx             # Portfolio distribution & severity analytics charts
+│
+├── data/                              # Sample Loan Tapes & Fixtures
+│   ├── loan_tape.csv                  # Clean baseline sample dataset
+│   ├── messy_loan_tape.csv            # Adversarial anomaly test dataset (15 defect types)
+│   ├── large_messy_loan_tape.csv      # 3,000+ record scale benchmark dataset
+│   ├── servicer_update.csv            # Cross-source secondary servicer tape
+│   ├── validation_rules.json          # Default policy ruleset catalog
+│   ├── users.json                     # Pre-configured demo user accounts
+│   └── generate.js                    # Mock data generation & stress test synthesis script
+│
+├── scripts/                           # Automated Quality & Red-Team Audit Runners
+│   ├── test_all_csv_uploads.cjs       # Complete multi-CSV automated verification runner
+│   └── master_brutal_audit_runner.cjs # Hostile penetration test suite (SQL injection, XSS, tamper tests)
+│
+├── QA_BRUTAL_AUDIT.md                 # Complete red-team test report & penetration results
+├── qa_test_report.md                  # QA compliance report across all modules
+├── ai_development_log.md              # Section 10 Agentic Coding compliance log
+├── walkthrough.md                     # Interactive UI feature walkthrough
+├── BRIEF.md                           # Intain Problem Statement technical briefing
+└── RUBRIC.md                          # 100-point Intain evaluation framework
+```
 
 ---
 
@@ -89,7 +194,7 @@ The application features role-based access control with pre-seeded credentials:
 
 ---
 
-## ⚡ Quick Start: Run Locally in 2 Minutes
+## 🚀 Quick Start: Run Locally in 2 Minutes
 
 ### 1. Installation & Web Build
 ```bash
@@ -107,6 +212,8 @@ npm run build:web
 ### 2. Start Application
 ```bash
 npm start
+# or for development mode:
+npm run dev
 ```
 Open **[http://localhost:8080](http://localhost:8080)** in your browser.
 
@@ -145,9 +252,19 @@ node scripts/test_all_csv_uploads.cjs
 
 ---
 
+## 🔒 Security, Integrity & Red-Team Audit
+
+- **Cryptographic Hash Chain:** Continuous append-only SHA-256 block ledger with genesis block verification.
+- **XSS & Injection Protection:** Strict server-side HTML entity sanitization with `DOMPurify` on all user-supplied note fields.
+- **Field Mutation Whitelisting:** Reviewer overrides are restricted to whitelisted loan fields (`principal_balance`, `interest_rate`, `borrower_name`, `property_state`, `maturity_date`, `status`, `dpd`, `document_status`).
+- **Role-Based Authorization:** Signed JWT verification prevents unauthenticated mutations or unauthorized role escalation.
+
+---
+
 ## 📚 Supplementary Documentation
 
-- 🧪 **[QA Test Report](./qa_test_report.md):** Complete multi-CSV automated test execution report.
+- 🧪 **[QA Test Report](./qa_test_report.md):** Multi-CSV automated test execution report.
+- 🔴 **[Brutal Red-Team Audit](./QA_BRUTAL_AUDIT.md):** Security, fuzzing, and hostile penetration test results.
 - 🎨 **[System Walkthrough](./walkthrough.md):** Visual UI tour and interactive session guide.
 - 🤖 **[AI Development Log](./ai_development_log.md):** Section 10 Agentic Coding compliance log with prompt evidence and human review case studies.
 - 📋 **[Executive Problem Brief](./BRIEF.md):** Intain Problem Statement technical briefing.

@@ -4,7 +4,6 @@ import {
   CheckCircle2, 
   Download, 
   Search, 
-  ShieldCheck, 
   KeyRound, 
   Copy, 
   Check, 
@@ -278,7 +277,7 @@ export default function VerifiedRecords() {
             <div className="text-[11px] text-emerald-600 mt-0.5">100% Policy Compliant</div>
           </div>
           <div className="p-3 bg-emerald-100/80 text-emerald-700 rounded-xl">
-            <ShieldCheck className="w-5 h-5" />
+            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 

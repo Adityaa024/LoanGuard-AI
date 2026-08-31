@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Building2, Sparkles, Loader2, KeyRound, Database, ShieldAlert, CheckCircle2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Building2, Sparkles, Loader2, KeyRound, Database, ShieldAlert, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function LoginView({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -200,7 +200,7 @@ export default function LoginView({ onLoginSuccess }) {
           {/* Footer Info */}
           <div className="bg-neutral-950/90 px-8 py-3.5 border-t border-neutral-800/80 flex items-center justify-between text-[11px] text-neutral-400">
             <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Role-Based Access Control</span>
             </div>
             <span className="font-mono text-[10px] text-neutral-500">v2.4 LTS</span>

@@ -16,7 +16,6 @@ import {
   Search,
   RefreshCw,
   FileCheck,
-  ShieldCheck,
   Zap,
   X
 } from 'lucide-react';
@@ -233,7 +232,7 @@ export default function OperatorView() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Clean & Valid</span>
               <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
-                <ShieldCheck className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4" />
               </span>
             </div>
             <div className="mt-2">
@@ -403,7 +402,7 @@ export default function OperatorView() {
                 onClick={() => setShowPolicyModal(true)}
                 className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Policy Rules (12)</span>
               </button>
             </div>
@@ -612,7 +611,7 @@ function PolicyCatalogModal({ onClose }) {
         <div className="p-5 border-b border-slate-200/80 flex justify-between items-center bg-slate-50/80">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-200/60">
-              <ShieldCheck className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">Intain Policy Verification Engine (12 Rules)</h3>

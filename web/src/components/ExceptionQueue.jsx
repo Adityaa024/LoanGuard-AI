@@ -18,7 +18,6 @@ import {
   SlidersHorizontal,
   FileText,
   Clock,
-  ShieldCheck,
   AlertTriangle,
   Zap,
   Info,
@@ -53,12 +52,15 @@ export default function ExceptionQueue() {
       .then(r => r.json())
       .then(d => {
         if (d && d.success && Array.isArray(d.data)) {
-          if (selectedExc) {
-            const stillOpen = d.data.find(e => e.id === selectedExc.id);
-            setSelectedExc(stillOpen || (d.data.length > 0 ? d.data[0] : null));
-          } else if (d.data.length > 0) {
-            setSelectedExc(d.data[0]);
-          }
+          setSelectedExc(prev => {
+            if (prev) {
+              const stillOpen = d.data.find(e => e.id === prev.id);
+              return stillOpen || (d.data.length > 0 ? d.data[0] : null);
+            } else if (d.data.length > 0) {
+              return d.data[0];
+            }
+            return null;
+          });
           setExceptions(d.data);
         } else {
           setExceptions([]);
@@ -66,7 +68,7 @@ export default function ExceptionQueue() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [selectedExc]);
+  }, []);
 
   useEffect(() => { fetchExceptions() }, [fetchExceptions]);
 
@@ -962,7 +964,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
               {busy ? (
                 <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></div>
               ) : (
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <CheckCircle2 className="w-3.5 h-3.5" />
               )}
               <span>Approve & Sign Off (SHA-256)</span>
             </button>
