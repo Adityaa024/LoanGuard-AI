@@ -114,7 +114,7 @@ export default function VerifiedRecords() {
     {
       header: 'Source Loan ID',
       accessorKey: 'loan_id',
-      cell: info => <span className="font-mono text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{info.getValue()}</span>
+      cell: info => <span className="font-mono text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">{info.getValue()}</span>
     },
     {
       header: 'Borrower Name',
@@ -149,7 +149,7 @@ export default function VerifiedRecords() {
               e.stopPropagation();
               copyToClipboard(l.verified_hash || '', l.id);
             }}
-            className="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 px-2 py-0.5 rounded transition-colors"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 px-2 py-0.5 rounded transition-colors cursor-pointer"
             title="Click to copy full SHA-256 hash"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -164,7 +164,7 @@ export default function VerifiedRecords() {
       header: () => <div className="text-right">Audit Trail</div>,
       cell: () => (
         <div className="text-right">
-          <span className="text-[11px] font-semibold text-indigo-600 group-hover:text-indigo-700 group-hover:underline inline-flex items-center gap-1">
+          <span className="text-[11px] font-semibold text-emerald-700 group-hover:text-emerald-800 group-hover:underline inline-flex items-center gap-1">
             <span>Inspect Chain</span>
             <ArrowRight className="w-3 h-3" />
           </span>
@@ -297,13 +297,13 @@ export default function VerifiedRecords() {
         <div className="saas-card p-4 flex items-center justify-between">
           <div>
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Integrity Guarantee</div>
-            <div className="text-2xl font-bold text-indigo-700 font-mono mt-0.5 flex items-center gap-1.5">
+            <div className="text-2xl font-bold text-emerald-800 font-mono mt-0.5 flex items-center gap-1.5">
               <span>SHA-256</span>
-              <Lock className="w-4 h-4 text-indigo-600" />
+              <Lock className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">Merkle Hash Chained</div>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl">
             <KeyRound className="w-5 h-5" />
           </div>
         </div>
@@ -600,7 +600,7 @@ function AuditTrailModal({ loan, onClose }) {
           </div>
           
           {verifiedMath && (
-            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs text-indigo-900 flex items-center gap-2">
+            <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs text-emerald-950 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span><strong>Cryptographic Check Passed:</strong> All SHA-256 block hashes chain sequentially with zero mathematical drift or tampering.</span>
             </div>
@@ -613,7 +613,7 @@ function AuditTrailModal({ loan, onClose }) {
             
             {loading ? (
               <div className="flex items-center gap-2 text-slate-500 py-6 text-xs justify-center">
-                <div className="animate-spin h-4 w-4 border-2 border-slate-300 border-t-indigo-600 rounded-full"></div>
+                <div className="animate-spin h-4 w-4 border-2 border-slate-300 border-t-emerald-600 rounded-full"></div>
                 <span>Reconstructing block chain from SQLite immutable ledger...</span>
               </div>
             ) : trail.length === 0 ? (
@@ -626,7 +626,7 @@ function AuditTrailModal({ loan, onClose }) {
                   <div key={entry.id || i} className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
+                        <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold">
                           {entry.seq || i + 1}
                         </span>
                         <span className="font-bold text-xs text-slate-900">{entry.actionType}</span>
@@ -689,10 +689,10 @@ function ApiIntegrationModal({ onClose }) {
       >
         <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
           <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-indigo-600" />
+            <Terminal className="w-4 h-4 text-emerald-600" />
             <h3 className="text-sm font-bold text-slate-900">Developer API Endpoint (Consumer Role)</h3>
           </div>
-          <button className="text-slate-400 hover:text-slate-600" onClick={onClose}>
+          <button className="text-slate-400 hover:text-slate-600 cursor-pointer" onClick={onClose}>
             <X className="w-4 h-4" />
           </button>
         </div>
