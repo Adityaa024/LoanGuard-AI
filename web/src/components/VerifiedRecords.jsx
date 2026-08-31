@@ -42,12 +42,15 @@ export default function VerifiedRecords() {
   const toast = useToast();
 
   const fetchVerifiedData = useCallback(() => {
+    const token = localStorage.getItem('loanguard_token');
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
     Promise.all([
-      fetch('/api/verified-loans').then(r => r.json()),
-      fetch('/api/summary').then(r => r.json())
+      fetch('/api/verified-loans', { headers: authHeaders }).then(r => r.json()),
+      fetch('/api/summary', { headers: authHeaders }).then(r => r.json())
     ]).then(([loansRes, sumRes]) => {
-      if (loansRes.success) setLoans(loansRes.data);
-      if (sumRes.success) setSummary(sumRes.data);
+      if (loansRes && loansRes.success && Array.isArray(loansRes.data)) setLoans(loansRes.data);
+      else setLoans([]);
+      if (sumRes && sumRes.success) setSummary(sumRes.data);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);

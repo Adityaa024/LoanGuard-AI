@@ -47,10 +47,12 @@ export default function ExceptionQueue() {
   const toast = useToast();
 
   const fetchExceptions = useCallback(() => {
-    fetch('/api/exceptions')
+    const token = localStorage.getItem('loanguard_token');
+    const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+    fetch('/api/exceptions', { headers: authHeaders })
       .then(r => r.json())
       .then(d => {
-        if (d.success) {
+        if (d && d.success && Array.isArray(d.data)) {
           if (selectedExc) {
             const stillOpen = d.data.find(e => e.id === selectedExc.id);
             setSelectedExc(stillOpen || (d.data.length > 0 ? d.data[0] : null));
@@ -58,6 +60,8 @@ export default function ExceptionQueue() {
             setSelectedExc(d.data[0]);
           }
           setExceptions(d.data);
+        } else {
+          setExceptions([]);
         }
         setLoading(false);
       })
