@@ -5,7 +5,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=20.0.0 <23.0.0"
+    "node": "20.x"
   },
   "scripts": {
     "seed": "node data/generate.js",
@@ -13,7 +13,7 @@
     "start": "node src/server.js",
     "build:web": "npm --prefix web install --include=dev && npm --prefix web run build",
     "build": "npm --prefix web install --include=dev && npm --prefix web run build",
-    "postinstall": "node data/generate.js || true",
+    "postinstall": "npm rebuild sqlite3 && node data/generate.js || true",
     "test": "node scripts/test_all_csv_uploads.cjs"
   },
   "dependencies": {
