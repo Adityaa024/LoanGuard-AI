@@ -53,6 +53,27 @@ export default function OperatorView() {
 
   useEffect(() => { fetchData() }, [fetchData]);
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const droppedFile = e.dataTransfer?.files?.[0];
+    if (droppedFile) {
+      setFile(droppedFile);
+      setResult(null);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const selected = e.target.files?.[0] || null;
+    setFile(selected);
+    setResult(null);
+  };
+
   const handleUpload = async (customFile = null) => {
     const targetFile = customFile || file;
     if (!targetFile) return;
@@ -137,14 +158,6 @@ export default function OperatorView() {
     navigator.clipboard.writeText(text);
     setCopiedBatch(id);
     setTimeout(() => setCopiedBatch(null), 2000);
-  };
-
-  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
-  const handleDrop = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
-    }
   };
 
   const filteredHistory = history.filter(b => 
@@ -332,7 +345,7 @@ export default function OperatorView() {
 
             <div className="mt-4 flex items-center gap-2">
               <button 
-                onClick={uploadFile} 
+                onClick={() => handleUpload()} 
                 disabled={!file || uploading} 
                 className="btn-primary flex-1 text-xs py-2.5 shadow-sm shadow-emerald-600/20"
               >
@@ -362,13 +375,11 @@ export default function OperatorView() {
             {uploading && (
               <div className="mt-3 space-y-1.5 animate-in fade-in duration-200">
                 <div className="flex justify-between text-[11px] text-slate-500">
-                  <span>Executing 12 Policy Rules...</span>
-                  <span className="font-mono font-semibold text-emerald-600">{progress}%</span>
+                  <span>Executing 12 Statutory Policy Rules in Memory...</span>
                 </div>
                 <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                   <div 
-                    className="bg-emerald-600 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
+                    className="bg-emerald-600 h-full w-full rounded-full animate-pulse"
                   />
                 </div>
               </div>
