@@ -1,6 +1,6 @@
 # 🏦 LoanGuard-AI — Intelligent Loan Tape Securitization & Continuous Verification Copilot
 
-> **Enterprise-Grade Full-Stack Implementation for the Intain Loan Data Verification Challenge**  
+> **Enterprise-Grade Full-Stack Implementation for the Loan Data Verification Challenge**  
 > An AI-Assisted, Cryptographically Verified Governance & Audit Platform for Structured Finance & Loan Tapes.
 
 ---
