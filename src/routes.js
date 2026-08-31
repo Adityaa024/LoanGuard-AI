@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import crypto from 'node:crypto'
 import multer from 'multer'
 import jwt from 'jsonwebtoken'
+import { fileURLToPath } from 'node:url'
 import { JSDOM } from 'jsdom'
 import createDOMPurify from 'dompurify'
 import { buildSystem } from './system.js'
@@ -14,8 +15,22 @@ const DOMPurify = createDOMPurify(window)
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hive-super-secret-key-for-demo'
 
-// Read users from data directory
-const USERS = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'users.json'), 'utf8'))
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ROOT = path.resolve(__dirname, '..')
+const USERS_PATH = path.join(ROOT, 'data', 'users.json')
+
+let USERS = [
+  { id: "usr_001", name: "Aditya Raj", email: "aditya.raj@gmail.com", password: "password123", role: "operator", avatar: "AR" },
+  { id: "usr_002", name: "Rajesh Menon", email: "rajesh.menon@loanguard.ai", password: "password123", role: "reviewer", avatar: "RM" },
+  { id: "usr_003", name: "Ananya Iyer", email: "ananya.iyer@loanguard.ai", password: "password123", role: "consumer", avatar: "AI" }
+]
+try {
+  if (fs.existsSync(USERS_PATH)) {
+    USERS = JSON.parse(fs.readFileSync(USERS_PATH, 'utf8'))
+  }
+} catch (e) {
+  console.warn('[routes] Could not read data/users.json, using built-in users:', e.message)
+}
 
 function requireRole(allowedRoles) {
   return (req, res, next) => {

@@ -40,15 +40,14 @@ app.get('/api/meta', (_req, res) => {
   res.json(meta)
 })
 
-// ---- Engine routes are mounted here as they come online ----
-let registerRoutes = null
+// ---- Engine routes ----
+import { registerRoutes } from './routes.js'
 try {
-  const mod = await import('./routes.js')
-  registerRoutes = mod.registerRoutes
+  await registerRoutes(app, { ROOT, meta })
+  console.log('[server] API routes mounted successfully')
 } catch (e) {
-  if (process.env.LOANGUARD_DEBUG) console.warn('[server] routes.js not mounted yet:', e.message)
+  console.error('[server] CRITICAL: Failed to mount routes.js:', e)
 }
-if (registerRoutes) await registerRoutes(app, { ROOT, meta })
 
 // API 404 Handler (Any /api/* route that was not matched above must return JSON 404, not HTML)
 app.all('/api/*', (_req, res) => {
