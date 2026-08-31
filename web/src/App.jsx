@@ -87,7 +87,7 @@ export default function App() {
   }
 
   const handleSignOut = () => {
-    localStorage.removeItem('hive_token')
+    localStorage.removeItem('loanguard_token')
     setIsAuthenticated(false)
     setUser(null)
   }
@@ -151,7 +151,7 @@ export default function App() {
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem('hive_token', data.token);
+        localStorage.setItem('loanguard_token', data.token);
         setUser(data.user);
         if (data.user.role === 'operator') setActiveTab('operator');
         if (data.user.role === 'reviewer') setActiveTab('reviewer');

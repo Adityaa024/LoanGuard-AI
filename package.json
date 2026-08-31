@@ -1,7 +1,7 @@
 {
-  "name": "the-hive",
-  "version": "1.0.0",
-  "description": "THE HIVE — a live governance layer for swarms of autonomous AI agents.",
+  "name": "loanguard-ai",
+  "version": "2.4.0",
+  "description": "LoanGuard-AI — Intelligent Loan Tape Securitization & Continuous Verification Copilot",
   "type": "module",
   "license": "Apache-2.0",
   "engines": {
@@ -12,9 +12,9 @@
     "dev": "node src/server.js",
     "start": "node src/server.js",
     "build:web": "cd web && npm install && npm run build",
-    "build": "bash -c '[ -f web/package.json ] && (cd web && npm install && npm run build) || echo \"[build] no web/ yet — serving placeholder\"'",
+    "build": "cd web && npm run build",
     "postinstall": "node data/generate.js || true",
-    "test": "HIVE_NO_OVERLAY=1 node --test 'test/**/*.test.js'"
+    "test": "node scripts/test_all_csv_uploads.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

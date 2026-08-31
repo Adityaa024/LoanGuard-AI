@@ -23,7 +23,7 @@ export default function LoginView({ onLoginSuccess }) {
         throw new Error(data.error || 'Invalid credentials');
       }
 
-      localStorage.setItem('hive_token', data.token);
+      localStorage.setItem('loanguard_token', data.token);
       onLoginSuccess(data.user);
     } catch (err) {
       setError(err.message);

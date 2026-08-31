@@ -1,65 +1,29 @@
-# THE HIVE — Builder Brief
+# 📋 LoanGuard-AI — Executive Problem Brief
 
-**THE HIVE**: a live governance layer for swarms of autonomous AI agents. Agents do real work; an
-independent **Warden** authorizes, denies, or escalates every action against written policy, and
-records an immutable, regulator-readable audit trail. When an agent tries to break the rules, the
-Warden catches it — live. Built end-to-end today and deployed to a live URL.
+## Intain Full-Stack Engineering Challenge: Loan Data Verification Copilot
 
-Built at the Claude Build Day (San Francisco, June 13, 2026), on Claude Opus 4.8.
+### 1. Problem Context
+In private debt securitization, structured finance, and secondary loan trading, loan tape accuracy is critical. Raw loan tapes from originating servicers frequently contain formatting defects, mathematical inconsistencies, inverted date fields, and conflicting reports. Manual reconciliation is slow, error-prone, and leaves portfolios vulnerable to regulatory audit penalties.
 
-## The problem & who it's for
-Autonomous agents are capable enough to run real operations — moving money, contacting customers,
-touching critical systems. They are not *deployed* in serious, regulated settings for one reason:
-no one can prove an agent stayed within its authority. When an agent acts, **who answers for it?**
-THE HIVE answers that: every agent action passes through a governance layer with written policies,
-human approval gates, and an audit trail an auditor could read. Agents become deployable because
-they become accountable.
+### 2. LoanGuard-AI Objective
+LoanGuard-AI is an end-to-end intelligent loan tape verification platform featuring:
+1. **Automated Multi-Source Tape Ingestion:** Ingests raw CSV tapes, normalizes fields, and tracks ingestion lineage.
+2. **Deterministic Policy & Schema Engine:** Enforces strict boundary rules (negative balances, usury rates, cross-date validity, state postal codes).
+3. **AI Diagnostic Copilot:** Explains anomalies in plain language, proposes verified corrected values, and clusters recurring error patterns.
+4. **Governed Human-in-the-Loop Workflow:** Enables reviewers to accept, override, or batch-resolve exceptions with cryptographic audit signatures.
+5. **Tamper-Evident SHA-256 Audit Trail:** Maintains an unbroken cryptographic hash chain for institutional securitization audit readiness.
 
-**Users:** teams deploying agent swarms in regulated or high-stakes operations (financial services
-is the live example here). **Quality bar:** every decision and log entry should look credible to a
-real compliance officer or auditor.
+---
 
-## Live domain (the concrete setting)
-A swarm of collections/servicing agents works a synthetic loan portfolio: scoring risk, drafting
-borrower outreach (simulated outbox — no real messaging), handling payments. This makes governance
-tangible. The governance layer is the product; finance is the setting. Architecture stays
-domain-agnostic so the same Warden could govern agents in any domain.
+### 3. Core Modules Overview (A–H)
 
-## What DONE looks like (all verifiable without a human)
-1. **Live URL** runs the full flow, seeded on boot, with the hive visualization rendering live.
-2. **Synthetic data:** a worker-agent task set + ~5,000 synthetic loans (`data/` generator + files).
-   No real names, institutions, or identifiers.
-3. **The Warden:** every agent action is routed through `guard.authorize(action, context)` →
-   {allow | deny | escalate}. No code path acts without it.
-4. **Policy engine:** policies live in `policies/policies.yaml` (scopes, limits, hours, frequency).
-5. **Human approval inbox:** sensitive actions (write-off, restructure, bureau report, over-scope)
-   halt and wait for one-click human approval; decision is logged with the approver.
-6. **Vision path:** upload a real document (receipt/statement/screenshot) → Opus 4.8 extracts
-   amounts/dates/refs → reconcile against the ledger → governed post, or route to exceptions.
-7. **Rogue-agent scenario:** a worker attempts out-of-policy actions (off-hours contact, banned
-   language, over-scope transfer, log tampering). The Warden denies each, flags it live, escalates,
-   and logs it.
-8. **Audit log:** append-only; each entry records agent ID, policy ID, decision, authorizer
-   (system|human), timestamp; exportable as a regulator-readable report.
-9. **Kill-switch:** a global control halts all agent actions immediately.
-10. **All RUBRIC.md rules PASS** per the independent verifier; test suite green; accurate README
-    (with architecture diagram + how governance works) and a DEMO.md script for the live walkthrough.
-
-## Architecture constraints (non-negotiable)
-- **The Guard/Warden seam.** All governance flows through one interface with a pluggable backend
-  (today: local policy engine reading `policies/policies.yaml`). Design it so an external governance
-  API could replace the backend without touching agent code. Keep it domain-agnostic.
-- **Engine before beauty.** The governance engine must run end-to-end even with the visualization
-  removed. The hive visual is the skin, not the substance. A metrics dashboard as the centerpiece
-  is disqualified by event rules — THE HIVE must *do* work, visibly.
-- **Visualization:** a living hive (PixiJS recommended; React Three Fiber if 3D is solid by
-  mid-afternoon). Agents as bees, the Warden as the comb they pass through, decisions as color.
-  Live updates via SSE; transitions via Framer Motion.
-- **Synthetic data only.** **Stack:** your choice; prefer fast and deployable (React + Vite +
-  Tailwind frontend; FastAPI or Node backend; SQLite/Postgres). Deploy to Vercel + Railway. Seed on boot.
-- **License:** Apache 2.0 (already in repo).
-
-## How to work
-Ask all clarifying questions at kickoff in one batch. Then plan, write tests alongside features,
-check your own work, and fix your own failures. Keep `NOTES.md`. Done only when the verifier passes
-twice consecutively and DEMO.md runs clean on the live URL.
+| Module | Core Functionality | Primary Persona |
+| :--- | :--- | :--- |
+| **Module A: Ingestion** | CSV parser, data normalization, batch metadata tracking, error row reporting | Data Operator |
+| **Module B: Validation** | Multi-rule validation engine (Zod + LocalPolicyEngine), business policy enforcement | LocalPolicyEngine |
+| **Module C: Exception Queue** | Filterable queue with severity classification, loan ID search, and bulk selection | Exception Reviewer |
+| **Module D: AI Assistant** | Automated explanation, confidence scoring, suggested value repair, cluster summary | AI Copilot |
+| **Module E: Resolution** | Governed override seam, XSS sanitization, whitelist validation, audit recording | Exception Reviewer |
+| **Module F: Canonical Ledger** | Verified loan portfolio table, immutable record seals, query/export APIs | Data Consumer |
+| **Module G: Dashboard** | Real-time Quality Score gauge, exception distribution charts, ingestion timeline | All Personas |
+| **Module H: REST API** | Fully documented Express/Node.js API endpoints with JWT bearer authentication | Institutional Clients |

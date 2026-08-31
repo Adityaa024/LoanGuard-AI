@@ -154,7 +154,7 @@ export default function ExceptionQueue() {
     setBatchAiLoading(true);
     setShowBatchAiModal(true);
     try {
-      const token = localStorage.getItem('hive_token');
+      const token = localStorage.getItem('loanguard_token');
       const res = await fetch('/api/ai/batch-summary', {
         method: 'POST',
         headers: {
@@ -180,7 +180,7 @@ export default function ExceptionQueue() {
     const ids = Array.from(selectedIds);
 
     try {
-      const token = localStorage.getItem('hive_token');
+      const token = localStorage.getItem('loanguard_token');
       const res = await fetch('/api/exceptions/batch-resolve', {
         method: 'POST',
         headers: {
@@ -604,7 +604,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   // Fetch AI review & full loan details
   useEffect(() => {
     setLoadingAi(true);
-    const token = localStorage.getItem('hive_token');
+    const token = localStorage.getItem('loanguard_token');
     const authHeaders = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -642,7 +642,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const resolveAction = async (action) => {
     setBusy(true);
     try {
-      const token = localStorage.getItem('hive_token');
+      const token = localStorage.getItem('loanguard_token');
       const res = await fetch(`/api/exceptions/${exc.id}`, {
         method: 'PATCH',
         headers: { 

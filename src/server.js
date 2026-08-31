@@ -1,4 +1,4 @@
-// THE HIVE — HTTP server.
+// LoanGuard-AI — HTTP server.
 // Single service: serves the built web app + the governance API + the live SSE event stream.
 // Engine modules are mounted here as they are built; this file stays thin.
 
@@ -28,7 +28,7 @@ const meta = readJson(path.join(ROOT, 'data', 'meta.json'), { loanCount: 0, task
 app.get('/health', (_req, res) => {
   res.json({
     ok: true,
-    service: 'the-hive',
+    service: 'loanguard-ai',
     seeded: meta.loanCount > 0,
     loanCount: meta.loanCount,
     taskCount: meta.taskCount,
@@ -41,14 +41,12 @@ app.get('/api/meta', (_req, res) => {
 })
 
 // ---- Engine routes are mounted here as they come online ----
-// (warden, swarm, audit, approvals, vision, events) — see src/* and registerRoutes below.
 let registerRoutes = null
 try {
   const mod = await import('./routes.js')
   registerRoutes = mod.registerRoutes
 } catch (e) {
-  // routes.js not present yet (thin-skeleton phase) — that's fine.
-  if (process.env.HIVE_DEBUG) console.warn('[server] routes.js not mounted yet:', e.message)
+  if (process.env.LOANGUARD_DEBUG) console.warn('[server] routes.js not mounted yet:', e.message)
 }
 if (registerRoutes) await registerRoutes(app, { ROOT, meta })
 
@@ -66,6 +64,6 @@ app.get('*', (_req, res) => {
 
 const PORT = process.env.PORT || 8080
 app.listen(PORT, () => {
-  console.log(`THE HIVE listening on :${PORT} — serving ${staticDir === webDist ? 'web/dist' : 'public (placeholder)'}`)
+  console.log(`LoanGuard-AI listening on :${PORT} — serving ${staticDir === webDist ? 'web/dist' : 'public (placeholder)'}`)
   console.log(`  seeded: ${meta.loanCount} loans, ${meta.taskCount} tasks`)
 })

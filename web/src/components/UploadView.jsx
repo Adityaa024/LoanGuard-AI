@@ -36,7 +36,7 @@ export default function OperatorView() {
 
   const fetchData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('hive_token');
+      const token = localStorage.getItem('loanguard_token');
       const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
       const [sumRes, histRes] = await Promise.all([
         fetch('/api/summary', { headers: authHeaders }).then(r => r.json()),
@@ -61,7 +61,7 @@ export default function OperatorView() {
     formData.append('file', targetFile);
 
     try {
-      const token = localStorage.getItem('hive_token');
+      const token = localStorage.getItem('loanguard_token');
       const headers = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 

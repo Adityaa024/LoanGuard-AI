@@ -57,7 +57,7 @@ export default function VerifiedRecords() {
   // Server-Side Governed Export
   const handleServerExport = async () => {
     try {
-      const token = localStorage.getItem('hive_token');
+      const token = localStorage.getItem('loanguard_token');
       const res = await fetch('/api/export/verified-loans', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -519,7 +519,7 @@ function AuditTrailModal({ loan, onClose }) {
   const [verifiedMath, setVerifiedMath] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('hive_token');
+    const token = localStorage.getItem('loanguard_token');
     const targetLoanId = loan.id || loan.loan_id;
     fetch(`/api/audit/loan/${targetLoanId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}

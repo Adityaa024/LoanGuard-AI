@@ -4,7 +4,7 @@ import { OrbitControls, Stars } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import * as THREE from 'three'
 
-// THE HIVE — 3D Loan Pipeline Visualization.
+// LoanGuard-AI — 3D Loan Pipeline Visualization.
 // Visualizes data ingestion -> Warden validation -> Verified Storage / Exception Queue.
 // Every record ingested creates a beam. Resolving exceptions creates beams from the Reviewer.
 

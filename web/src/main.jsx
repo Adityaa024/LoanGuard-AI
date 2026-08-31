@@ -11,7 +11,7 @@ window.fetch = async (...args) => {
   if (typeof resource === 'string' && resource.startsWith('/api')) {
     config = config || {};
     config.headers = config.headers || {};
-    const token = localStorage.getItem('hive_token');
+    const token = localStorage.getItem('loanguard_token');
     if (token) {
       if (config.headers instanceof Headers) {
         config.headers.append('Authorization', `Bearer ${token}`);
@@ -22,7 +22,7 @@ window.fetch = async (...args) => {
   }
   const res = await originalFetch(resource, config);
   if (res.status === 401 || res.status === 403) {
-    localStorage.removeItem('hive_token');
+    localStorage.removeItem('loanguard_token');
     window.dispatchEvent(new Event('auth_error'));
   }
   return res;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 export async function api(pathname, opts = {}) {
-  const token = localStorage.getItem('hive_token')
+  const token = localStorage.getItem('loanguard_token')
   const headers = { 'content-type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
@@ -13,7 +13,7 @@ export async function api(pathname, opts = {}) {
   
   if (res.status === 401 || res.status === 403) {
     // Basic auto-logout on unauthorized
-    localStorage.removeItem('hive_token')
+    localStorage.removeItem('loanguard_token')
     window.dispatchEvent(new Event('auth_error'))
   }
   
@@ -23,7 +23,7 @@ export async function api(pathname, opts = {}) {
 export async function uploadDoc(file) {
   const fd = new FormData()
   fd.append('file', file)
-  const token = localStorage.getItem('hive_token')
+  const token = localStorage.getItem('loanguard_token')
   const headers = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
 
