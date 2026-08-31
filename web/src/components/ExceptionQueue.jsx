@@ -606,10 +606,12 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const [busy, setBusy] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('ai'); // 'ai' or 'collateral'
+  const [suggestionApplied, setSuggestionApplied] = useState(false);
 
   // Fetch AI review & full loan details
   useEffect(() => {
     setLoadingAi(true);
+    setSuggestionApplied(false);
     const token = localStorage.getItem('loanguard_token');
     const authHeaders = {
       'Content-Type': 'application/json',
@@ -645,6 +647,14 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
       .catch(() => {});
   }, [exc.id, exc.current_value, exc.loan_id]);
 
+  const handleApplySuggestion = (val) => {
+    if (val === null || val === undefined) return;
+    setCorrectedValue(val);
+    setNote(`Applied AI recommended value (${val}) per validation rule.`);
+    setSuggestionApplied(true);
+    setTimeout(() => setSuggestionApplied(false), 2500);
+  };
+
   const resolveAction = async (action) => {
     setBusy(true);
     try {
@@ -661,7 +671,14 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           corrected_value: correctedValue 
         })
       });
-      if (res.ok) onResolved();
+      const data = await res.json();
+      if (res.ok && data.success) {
+        onResolved();
+      } else {
+        toast.error("Resolution Failed", data.error || 'Failed to update exception');
+      }
+    } catch (e) {
+      toast.error("Error", e.message);
     } finally {
       setBusy(false);
     }
@@ -734,10 +751,11 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           </div>
 
           {/* Corrected Value with Inline Edit */}
-          <div className="flex flex-col justify-between border-l border-slate-200/80 pl-3.5">
+          <div className={`flex flex-col justify-between border-l border-slate-200/80 pl-3.5 transition-all duration-300 ${suggestionApplied ? 'bg-emerald-50/80 ring-2 ring-emerald-500/40 rounded-r-lg p-2' : ''}`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                Proposed Value
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <span>Proposed Value</span>
+                {suggestionApplied && <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">✓ Applied</span>}
               </span>
               <button 
                 onClick={() => setEditMode(!editMode)}
@@ -837,19 +855,32 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
                       </p>
                       
                       {aiReview.suggested_value && (
-                        <div className="flex items-center justify-between bg-white p-2 rounded-lg border border-indigo-100 shadow-xs">
-                          <div className="text-xs text-slate-600">
-                            <span>Suggested Value:</span>
-                            <span className="font-mono text-emerald-700 font-bold ml-1.5">
+                        <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-indigo-100 shadow-xs">
+                          <div className="text-xs text-slate-700">
+                            <span className="text-slate-500">Suggested Value:</span>
+                            <span className="font-mono text-emerald-700 font-bold ml-1.5 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                               {aiReview.suggested_value}
                             </span>
                           </div>
                           <button 
-                            className="btn-primary text-[10px] py-1 px-2.5 cursor-pointer" 
-                            onClick={() => setCorrectedValue(aiReview.suggested_value)}
+                            className={`text-[10px] py-1 px-3 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                              suggestionApplied 
+                                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20' 
+                                : 'btn-primary'
+                            }`} 
+                            onClick={() => handleApplySuggestion(aiReview.suggested_value)}
                           >
-                            <Check className="w-3 h-3" />
-                            <span>Apply Suggestion</span>
+                            {suggestionApplied ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-200" />
+                                <span>Applied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3 h-3" />
+                                <span>Apply Suggestion</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       )}
