@@ -11,8 +11,8 @@
     "seed": "node data/generate.js",
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "build:web": "cd web && npm install && npm run build",
-    "build": "cd web && npm run build",
+    "build:web": "npm --prefix web install --include=dev && npm --prefix web run build",
+    "build": "npm --prefix web install --include=dev && npm --prefix web run build",
     "postinstall": "node data/generate.js || true",
     "test": "node scripts/test_all_csv_uploads.cjs"
   },
