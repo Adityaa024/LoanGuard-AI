@@ -415,7 +415,7 @@ export async function registerRoutes(app, { ROOT }) {
   app.get('/audit/:loanId', requireRole(['operator', 'reviewer', 'consumer']), handleGetAuditForLoan)
 
   // ---- Copilot/AI API ----
-  app.post('/api/ai-review', requireRole(['reviewer']), async (req, res) => {
+  app.post('/api/ai-review', requireRole(['reviewer', 'operator']), async (req, res) => {
     try {
       const { exception_id } = req.body
       if (!exception_id) return res.status(400).json({ success: false, error: 'exception_id required' })
@@ -845,7 +845,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
 
   // ---- Batch Exception Resolution ----
-  app.post('/api/exceptions/batch-resolve', requireRole(['reviewer']), async (req, res) => {
+  app.post('/api/exceptions/batch-resolve', requireRole(['reviewer', 'operator']), async (req, res) => {
     try {
       const { exception_ids, action = 'resolve', note = 'Batch resolved by reviewer' } = req.body
       if (!Array.isArray(exception_ids) || exception_ids.length === 0) {
@@ -905,7 +905,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
 
   // ---- Exception Resolution ----
-  app.patch('/api/exceptions/:id', requireRole(['reviewer']), async (req, res) => {
+  app.patch('/api/exceptions/:id', requireRole(['reviewer', 'operator']), async (req, res) => {
     try {
       const { action, note, corrected_value } = req.body
       if (!['resolve', 'reject', 'override', 'request_correction'].includes(action)) {
