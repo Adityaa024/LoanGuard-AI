@@ -312,6 +312,18 @@ export async function registerRoutes(app, { ROOT }) {
     }
   })
 
+  // Cryptographic audit chain verification
+  const handleVerifyAudit = async (req, res) => {
+    try {
+      const result = await audit.verify()
+      res.json({ success: true, ...result })
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message })
+    }
+  }
+  app.get('/api/audit/verify', requireRole(['operator', 'reviewer', 'consumer']), handleVerifyAudit)
+  app.get('/api/audit-verify', requireRole(['operator', 'reviewer', 'consumer']), handleVerifyAudit)
+
   const handleGetAuditForLoan = async (req, res) => {
     try {
       const entries = await audit.list()
