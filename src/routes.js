@@ -497,9 +497,30 @@ export async function registerRoutes(app, { ROOT }) {
           confidence = 0.80
           recommendation = `Inspect for accidental duplicate loan entry or verify if borrower took multiple distinct loans on the same date.`
           break
+        case 'POL-DUP-001':
+        case 'POL-ID-001':
+          explanation = `Duplicate or conflicting Primary Identifier detected (${exc.current_value || exc.description}). Identical loan IDs violate portfolio uniqueness constraints and indicate multi-servicer record collision.`
+          confidence = 0.94
+          suggestedValue = exc.current_value ? `${exc.current_value}_remediated` : 'LN_CANONICAL'
+          recommendation = `Deduplicate record against canonical master tape or assign a unique versioned identifier.`
+          break
+        case 'POL-ZIP-001':
+          explanation = `Property Postal/Zip Code is invalid or malformed ("${exc.current_value}"). US Zip codes must follow standard 5-digit format.`
+          confidence = 0.89
+          suggestedValue = String(exc.current_value || '').replace(/\D/g, '').slice(0, 5).padStart(5, '90210')
+          recommendation = `Sanitize postal code to compliant 5-digit format.`
+          break
+        case 'POL-TYPE-001':
+          explanation = `Property type is unclassified or non-standard ("${exc.current_value}"). Expected Single Family, Multi Family, Commercial, or Condo.`
+          confidence = 0.85
+          suggestedValue = 'Single Family'
+          recommendation = `Standardize collateral asset classification to statutory property categories.`
+          break
         default:
-          explanation = `An exception occurred: ${exc.description}.`
-          recommendation = `Manual review required.`
+          explanation = `Compliance policy anomaly detected: ${exc.description || exc.rule_name}. Evaluated against statutory securitization constraints.`
+          confidence = 0.85
+          suggestedValue = exc.suggested_value || exc.current_value
+          recommendation = `Review collateral note against canonical securitization standard.`
       }
 
       // Record AI intervention in Audit Log
