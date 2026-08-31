@@ -334,17 +334,39 @@ export async function registerRoutes(app, { ROOT }) {
   app.get('/loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetLoanById)
 
   const handleGetExceptions = async (req, res) => {
-    const db = await getDb()
-    const exc = await db.all(`SELECT e.*, l.loan_id as original_loan_id FROM exceptions e JOIN loans l ON e.loan_id = l.id WHERE e.status = 'open' ORDER BY e.id DESC`)
-    res.json({ success: true, data: exc.map(e => ({...e, loan_id: e.original_loan_id})) })
+    try {
+      const db = await getDb()
+      const limit = Math.min(Math.max(parseInt(req.query.limit) || 500, 1), 2000)
+      const exc = await db.all(`
+        SELECT e.*, l.loan_id as original_loan_id 
+        FROM exceptions e 
+        JOIN loans l ON e.loan_id = l.id 
+        WHERE e.status = 'open' 
+        ORDER BY e.id DESC 
+        LIMIT ?
+      `, [limit])
+      res.json({ success: true, data: exc.map(e => ({...e, loan_id: e.original_loan_id})) })
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message })
+    }
   }
   app.get('/api/exceptions', requireRole(['operator', 'reviewer', 'consumer']), handleGetExceptions)
   app.get('/exceptions', requireRole(['operator', 'reviewer', 'consumer']), handleGetExceptions)
 
   const handleGetVerifiedLoans = async (req, res) => {
-    const db = await getDb()
-    const verified = await db.all(`SELECT * FROM loans WHERE validation_status = 'verified' ORDER BY verified_at DESC`)
-    res.json({ success: true, data: verified })
+    try {
+      const db = await getDb()
+      const limit = Math.min(Math.max(parseInt(req.query.limit) || 500, 1), 2000)
+      const verified = await db.all(`
+        SELECT * FROM loans 
+        WHERE validation_status = 'verified' 
+        ORDER BY verified_at DESC 
+        LIMIT ?
+      `, [limit])
+      res.json({ success: true, data: verified })
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message })
+    }
   }
   app.get('/api/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
   app.get('/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)

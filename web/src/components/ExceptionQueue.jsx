@@ -597,52 +597,79 @@ function SeverityBadge({ severity }) {
   );
 }
 
+const aiReviewCache = new Map();
+const loanDataCache = new Map();
+
 function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, position }) {
-  const [aiReview, setAiReview] = useState(null);
-  const [loanData, setLoanData] = useState(null);
-  const [loadingAi, setLoadingAi] = useState(true);
+  const [aiReview, setAiReview] = useState(() => aiReviewCache.get(exc.id) || null);
+  const [loanData, setLoanData] = useState(() => loanDataCache.get(exc.loan_id) || null);
+  const [loadingAi, setLoadingAi] = useState(() => !aiReviewCache.has(exc.id));
   const [correctedValue, setCorrectedValue] = useState(exc.current_value || '');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('ai'); // 'ai' or 'collateral'
 
-  // Fetch AI review & full loan details
+  // Fetch AI review & full loan details with caching
   useEffect(() => {
-    setLoadingAi(true);
+    const cachedAi = aiReviewCache.get(exc.id);
+    const cachedLoan = loanDataCache.get(exc.loan_id);
+
+    if (cachedAi) {
+      setAiReview(cachedAi);
+      if (cachedAi.suggested_value !== null && cachedAi.suggested_value !== undefined) {
+        setCorrectedValue(cachedAi.suggested_value);
+      }
+      setLoadingAi(false);
+    } else {
+      setLoadingAi(true);
+    }
+
+    if (cachedLoan) {
+      setLoanData(cachedLoan);
+    }
+
     const token = localStorage.getItem('loanguard_token');
     const authHeaders = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     };
     
-    // AI Review
-    fetch('/api/ai-review', {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({ exception_id: exc.id })
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          setAiReview(d.data);
-          if (d.data.suggested_value !== null && d.data.suggested_value !== undefined) {
-            setCorrectedValue(d.data.suggested_value);
+    // AI Review fetch if not cached
+    if (!cachedAi) {
+      fetch('/api/ai-review', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ exception_id: exc.id })
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            aiReviewCache.set(exc.id, d.data);
+            setAiReview(d.data);
+            if (d.data.suggested_value !== null && d.data.suggested_value !== undefined) {
+              setCorrectedValue(d.data.suggested_value);
+            }
           }
-        }
-        setLoadingAi(false);
-      })
-      .catch(() => setLoadingAi(false));
+          setLoadingAi(false);
+        })
+        .catch(() => setLoadingAi(false));
+    }
 
-    // Loan Detail for Context
-    fetch(`/api/loans/${exc.loan_id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) setLoanData(d.data);
+    // Loan Detail fetch if not cached
+    if (!cachedLoan) {
+      fetch(`/api/loans/${exc.loan_id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
-      .catch(() => {});
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            loanDataCache.set(exc.loan_id, d.data);
+            setLoanData(d.data);
+          }
+        })
+        .catch(() => {});
+    }
   }, [exc.id, exc.current_value, exc.loan_id]);
 
   const resolveAction = async (action) => {
