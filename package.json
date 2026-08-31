@@ -13,7 +13,7 @@
     "start": "node src/server.js",
     "build:web": "npm --prefix web install --include=dev && npm --prefix web run build",
     "build": "npm --prefix web install --include=dev && npm --prefix web run build",
-    "postinstall": "npm rebuild sqlite3 && node data/generate.js || true",
+    "postinstall": "node data/generate.js || true",
     "test": "node scripts/test_all_csv_uploads.cjs"
   },
   "dependencies": {
@@ -24,7 +24,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "sqlite": "^5.1.1",
-    "sqlite3": "^6.0.1",
+    "sqlite3": "^5.1.7",
     "yaml": "^2.6.1",
     "zod": "^4.5.4"
   }
