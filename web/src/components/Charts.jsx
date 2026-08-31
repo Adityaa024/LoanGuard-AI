@@ -5,45 +5,69 @@ import {
 } from 'recharts';
 
 export function ExceptionSeverityChart({ data }) {
-  // data expected format: { critical_exceptions, high_exceptions, medium_exceptions }
+  // data expected format: { critical_exceptions, high_exceptions, medium_exceptions, low_exceptions }
+  const total = (data?.critical_exceptions || 0) + (data?.high_exceptions || 0) + (data?.medium_exceptions || 0) + (data?.low_exceptions || 0);
+  
   const chartData = [
-    { name: 'Critical', value: data?.critical_exceptions || 0, color: '#e11d48' }, // rose-600
-    { name: 'High', value: data?.high_exceptions || 0, color: '#d97706' }, // amber-600
-    { name: 'Medium', value: data?.medium_exceptions || 0, color: '#2563eb' } // blue-600
+    { name: 'Critical', value: data?.critical_exceptions || 0, color: '#e11d48', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' }, // rose-600
+    { name: 'High', value: data?.high_exceptions || 0, color: '#d97706', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' }, // amber-600
+    { name: 'Medium', value: data?.medium_exceptions || 0, color: '#2563eb', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' }, // blue-600
+    { name: 'Low', value: data?.low_exceptions || 0, color: '#64748b', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' } // slate-500
   ].filter(d => d.value > 0);
 
   if (chartData.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-emerald-600 font-medium bg-emerald-50/50 rounded-xl">
-        No exceptions found.
+      <div className="flex h-full items-center justify-center text-xs text-emerald-600 font-medium bg-emerald-50/50 rounded-xl p-4">
+        No active exceptions in queue (100% compliant).
       </div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          data={chartData}
-          cx="50%"
-          cy="50%"
-          innerRadius={40}
-          outerRadius={65}
-          paddingAngle={5}
-          dataKey="value"
-          stroke="none"
-        >
-          {chartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
-          ))}
-        </Pie>
-        <RechartsTooltip 
-          contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-          itemStyle={{ fontWeight: 600 }}
-        />
-        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}/>
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="flex flex-col h-full justify-between">
+      <div className="flex-1 min-h-[140px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={36}
+              outerRadius={56}
+              paddingAngle={3}
+              minAngle={12}
+              dataKey="value"
+              stroke="#ffffff"
+              strokeWidth={2}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <RechartsTooltip 
+              formatter={(value, name) => [`${value.toLocaleString()} (${total > 0 ? Math.round((value / total) * 100) : 0}%)`, name]}
+              contentStyle={{ borderRadius: '8px', fontSize: '11px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              itemStyle={{ fontWeight: 600 }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Severity Breakdown Legend */}
+      <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100">
+        {chartData.map(item => (
+          <div key={item.name} className={`px-2 py-1 rounded-lg border ${item.bg} ${item.border} flex flex-col items-center justify-center`}>
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+              <span className="text-[10px] font-semibold text-slate-700">{item.name}</span>
+            </div>
+            <span className={`text-[11px] font-bold font-mono ${item.text}`}>
+              {item.value.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

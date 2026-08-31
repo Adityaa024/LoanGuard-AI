@@ -14,7 +14,8 @@ import {
   Building2,
   ExternalLink,
   Zap,
-  Globe
+  Globe,
+  ShieldCheck
 } from 'lucide-react'
 import { useEventStream } from './api.js'
 import OperatorView from './components/UploadView.jsx'
@@ -135,9 +136,9 @@ export default function App() {
     },
     { 
       id: 'hive', 
-      label: '3D Swarm Pipeline', 
+      label: '3D Pipeline Visualizer', 
       icon: Globe, 
-      desc: 'Live Event Visualization',
+      desc: 'Visual Tape Architecture',
       pill: 'LIVE'
     }
   ]
@@ -163,57 +164,45 @@ export default function App() {
     }
   };
 
-  const handleTabClick = async (tabId) => {
-    if (tabId === 'operator' && user?.role !== 'operator') {
-      await switchPersona('aditya.raj@gmail.com');
-    } else if (tabId === 'reviewer' && user?.role !== 'reviewer') {
-      await switchPersona('rajesh.menon@loanguard.ai');
-    } else if (tabId === 'consumer' && user?.role !== 'consumer') {
-      await switchPersona('ananya.iyer@loanguard.ai');
-    } else {
-      setActiveTab(tabId);
-    }
-  };
-
   if (!isAuthenticated) {
     return <LoginView onLoginSuccess={handleLoginSuccess} />
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 text-slate-900 overflow-hidden font-sans select-none">
+    <div className="flex h-screen w-full bg-[#f8fafc] text-slate-900 overflow-hidden font-sans antialiased selection:bg-indigo-500 selection:text-white">
       
-      {/* Sleek Enterprise Sidebar */}
-      <aside className="w-72 bg-white border-r border-slate-200/80 flex flex-col flex-shrink-0 z-40 relative shadow-[1px_0_4px_0_rgba(0,0,0,0.02)]">
+      {/* Dynamic Institutional Left Navigation Sidebar */}
+      <aside className="w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between shrink-0 select-none">
         
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-200/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl flex items-center justify-center text-lg font-bold text-white shadow-sm shadow-indigo-600/30">
-              ⬡
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
+              <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-slate-900 tracking-tight">LoanGuard-AI COPILOT</span>
-                <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200/50">v2.4</span>
+                <span className="font-bold text-sm text-slate-900 tracking-tight">LoanGuard-AI</span>
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-600 border border-indigo-200/50">v2.4</span>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">Loan Verification Swarm</p>
+              <p className="text-[11px] text-slate-500 font-medium">Loan Tape Verification Copilot</p>
             </div>
           </div>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto py-3">
-          {TABS.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+        {/* Navigation Tabs */}
+        <nav className="p-3 space-y-1.5 flex-1 overflow-y-auto">
+          {TABS.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className={`w-full group flex items-center justify-between p-3 rounded-xl text-left transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'bg-indigo-50 border border-indigo-100 shadow-sm'
-                    : 'hover:bg-slate-50 border border-transparent'
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-start gap-3 p-2.5 rounded-xl text-left transition-all duration-150 relative cursor-pointer ${
+                  isActive 
+                    ? 'bg-indigo-50/70 text-indigo-900 font-semibold shadow-xs border border-indigo-100/80' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -254,7 +243,7 @@ export default function App() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[11px] font-medium text-slate-600">Warden Guard Active</span>
+              <span className="text-[11px] font-medium text-slate-600">Policy Engine Active</span>
             </div>
             <span className="text-[10px] font-mono text-slate-400">12 POLICIES</span>
           </div>
@@ -295,7 +284,7 @@ export default function App() {
               {activeTab === 'operator' && 'Data Operator / Ingestion & Quality'}
               {activeTab === 'reviewer' && 'Exception Reviewer / Copilot Queue'}
               {activeTab === 'consumer' && 'Data Consumer / Verified Portfolio & Audit'}
-              {activeTab === 'hive' && 'Swarm Intelligence / 3D Pipeline Visualizer'}
+              {activeTab === 'hive' && 'Visual Tape Verification Pipeline'}
             </span>
           </div>
 

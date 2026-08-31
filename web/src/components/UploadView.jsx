@@ -156,14 +156,14 @@ export default function OperatorView() {
       {/* Header with Title & Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Loan Ingestion & Quality Hub</span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Loan Ingestion & Quality Hub</h1>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/60">
               Active Session: Operator
             </span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Upload raw loan tapes, execute real-time Warden policy validation, and monitor portfolio data quality.
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Upload raw loan tapes, execute real-time policy engine validation, and monitor portfolio data quality.
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export default function OperatorView() {
           <button 
             onClick={fetchData} 
             className="btn-secondary text-xs py-1.5 px-3"
-            title="Refresh Metrics"
+            title="Refresh Ingestion Metrics"
           >
             <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
             <span>Sync</span>
@@ -241,10 +241,10 @@ export default function OperatorView() {
                 <span className="text-2xl font-bold text-emerald-700">
                   {(summary.valid_loans + summary.verified_loans)?.toLocaleString() || 0}
                 </span>
-                <span className="text-[10px] text-emerald-600/80 font-medium">Ready</span>
+                <span className="text-[10px] text-emerald-600/80 font-medium">Compliant</span>
               </div>
               <p className="text-[11px] text-emerald-600 mt-1">
-                {summary.verified_loans || 0} canonical verified
+                {summary.valid_loans || 0} valid · {summary.verified_loans || 0} canonical verified
               </p>
             </div>
           </div>
@@ -259,18 +259,14 @@ export default function OperatorView() {
             </div>
             <div className="mt-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-amber-700">
+                <span className="text-2xl font-bold text-amber-800">
                   {summary.open_exceptions?.toLocaleString() || 0}
                 </span>
-                <span className="text-[10px] text-amber-600/80 font-medium">Anomalies</span>
+                <span className="text-[10px] text-amber-700/80 font-medium">Anomalies</span>
               </div>
-              <div className="flex items-center gap-1.5 mt-1 text-[10px] font-semibold">
-                <span className="text-rose-600">{summary.critical_exceptions || 0} Critical</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-amber-600">{summary.high_exceptions || 0} High</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-blue-600">{summary.medium_exceptions || 0} Med</span>
-              </div>
+              <p className="text-[10px] text-amber-700 font-medium mt-1">
+                Across {summary.exception_loans || (summary.total_loans - summary.valid_loans - summary.verified_loans) || 0} affected loans ({summary.critical_exceptions || 0} Crit · {summary.high_exceptions || 0} High · {summary.medium_exceptions || 0} Med)
+              </p>
             </div>
           </div>
 
@@ -543,13 +539,17 @@ export default function OperatorView() {
                             <span className="font-mono text-xs font-bold text-slate-800">
                               {batch.total_records?.toLocaleString() || 0}
                             </span>
-                            {batch.exception_records > 0 ? (
+                            {batch.total_records === 0 ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-semibold border border-slate-200">
+                                0 records (Empty)
+                              </span>
+                            ) : batch.exception_records > 0 ? (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200/60">
                                 {batch.exception_records} exceptions ({100 - cleanPercentage}%)
                               </span>
                             ) : (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
-                                100% Clean
+                                100% Clean ({batch.total_records} valid)
                               </span>
                             )}
                           </div>
@@ -615,7 +615,7 @@ function PolicyCatalogModal({ onClose }) {
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Warden Validation Policy Engine (12 Rules)</h3>
+              <h3 className="text-sm font-bold text-slate-900">Intain Policy Verification Engine (12 Rules)</h3>
               <p className="text-xs text-slate-500 mt-0.5">Automated statutory loan tape compliance rules and severity levels</p>
             </div>
           </div>
