@@ -27,6 +27,38 @@ In private debt securitization, structured finance, and secondary loan trading, 
 
 ---
 
+## 📸 Application Showcase & Visual Tour
+
+### 1. Data Operator — Ingestion Studio & Quality Score
+*Fast drag-and-drop CSV ingestion with pre-set test benchmarks, batch lineage tracking, and real-time compliance rate.*
+![Data Operator Dashboard](./docs/images/operator_dashboard.png)
+
+---
+
+### 2. Warden Validation Policy Engine (12 Deterministic Rules)
+*Declarative policy catalog detailing mathematical invariants, date checks, interest corridors, and severity levels.*
+![Warden Policy Catalog](./docs/images/policy_catalog.png)
+
+---
+
+### 3. Exception Reviewer — AI Copilot Workbench & Side-by-Side Diff
+*Split-screen queue with keyboard navigation (`J`/`K`), root cause diagnostic explainer, repair suggestions, and 1-click apply.*
+![Exception Reviewer Copilot](./docs/images/reviewer_copilot.png)
+
+---
+
+### 4. Data Consumer — Canonical Verified Portfolio
+*Searchable, filterable ledger of verified loans with cryptographic SHA-256 digital seal badges and governed streaming CSV export.*
+![Canonical Verified Portfolio](./docs/images/consumer_portfolio.png)
+
+---
+
+### 5. Cryptographic Proof & Tamper-Evident SHA-256 Lineage Modal
+*Auditable sequential block ledger verifying the complete lifecycle of a loan from raw ingestion to reviewer sign-off.*
+![Cryptographic Proof and Lineage](./docs/images/audit_proof.png)
+
+---
+
 ## 📋 Problem Statement Compliance Matrix (Modules A–H)
 
 | Module | Name | Implementation Details | Primary Persona | Status |
@@ -122,6 +154,14 @@ d:/intain/
 │   │       ├── ExceptionQueue.jsx     # Reviewer workbench, side-by-side diff, AI drawer, batch resolve
 │   │       ├── VerifiedRecords.jsx    # Canonical portfolio ledger, SHA-256 digital seals, CSV export
 │   │       └── Charts.jsx             # Portfolio distribution & severity analytics charts
+│
+├── docs/                              # Project Documentation & Assets
+│   └── images/                        # High-resolution application screenshots
+│       ├── operator_dashboard.png     # Data Operator Ingestion Hub
+│       ├── policy_catalog.png         # Warden Validation Policy Catalog
+│       ├── reviewer_copilot.png       # Exception Reviewer Workbench & AI Copilot
+│       ├── consumer_portfolio.png     # Canonical Verified Portfolio Ledger
+│       └── audit_proof.png            # Cryptographic SHA-256 Proof & Lineage
 │
 ├── data/                              # Sample Loan Tapes & Fixtures
 │   ├── loan_tape.csv                  # Clean baseline sample dataset
