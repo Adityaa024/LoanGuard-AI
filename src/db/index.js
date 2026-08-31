@@ -144,11 +144,15 @@ export async function getDb() {
   } catch (e) {
     // ignore if already exists
   }
-  try {
-    await dbInstance.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_upload_batches_file_hash ON upload_batches(file_hash);`)
-  } catch (e) {
-    // ignore
-  }
+  // Performance Indexes for sub-10ms queries with 75k+ loans
+  await dbInstance.exec(`
+    CREATE INDEX IF NOT EXISTS idx_exceptions_status ON exceptions(status);
+    CREATE INDEX IF NOT EXISTS idx_exceptions_loan_id ON exceptions(loan_id);
+    CREATE INDEX IF NOT EXISTS idx_loans_loan_id ON loans(loan_id);
+    CREATE INDEX IF NOT EXISTS idx_loans_validation_status ON loans(validation_status);
+    CREATE INDEX IF NOT EXISTS idx_loans_upload_batch ON loans(upload_batch_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_loan_id ON audit_logs(loanId);
+  `)
 
   return dbInstance
 }

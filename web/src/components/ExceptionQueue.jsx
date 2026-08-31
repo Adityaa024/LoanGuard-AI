@@ -89,6 +89,9 @@ export default function ExceptionQueue() {
     return counts;
   }, [exceptions]);
 
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
+
   const filteredExceptions = useMemo(() => {
     return exceptions.filter(exc => {
       const matchesSearch = 
@@ -102,19 +105,36 @@ export default function ExceptionQueue() {
     });
   }, [exceptions, searchTerm, severityFilter, ruleFilter]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, severityFilter, ruleFilter]);
+
+  const totalPages = Math.ceil(filteredExceptions.length / pageSize) || 1;
+  const paginatedExceptions = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredExceptions.slice(start, start + pageSize);
+  }, [filteredExceptions, page, pageSize]);
+
   const currentIndex = selectedExc ? filteredExceptions.findIndex(e => e.id === selectedExc.id) : -1;
   
   const handleNext = useCallback(() => {
     if (currentIndex < filteredExceptions.length - 1) {
-      setSelectedExc(filteredExceptions[currentIndex + 1]);
+      const nextExc = filteredExceptions[currentIndex + 1];
+      setSelectedExc(nextExc);
+      const targetPage = Math.floor((currentIndex + 1) / pageSize) + 1;
+      if (targetPage !== page) setPage(targetPage);
     }
-  }, [currentIndex, filteredExceptions]);
+  }, [currentIndex, filteredExceptions, page, pageSize]);
 
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
-      setSelectedExc(filteredExceptions[currentIndex - 1]);
+      const prevExc = filteredExceptions[currentIndex - 1];
+      setSelectedExc(prevExc);
+      const targetPage = Math.floor((currentIndex - 1) / pageSize) + 1;
+      if (targetPage !== page) setPage(targetPage);
     }
-  }, [currentIndex, filteredExceptions]);
+  }, [currentIndex, filteredExceptions, page, pageSize]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -134,10 +154,10 @@ export default function ExceptionQueue() {
 
   // Bulk Selection Handlers
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredExceptions.length && filteredExceptions.length > 0) {
+    if (selectedIds.size === paginatedExceptions.length && paginatedExceptions.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredExceptions.map(e => e.id)));
+      setSelectedIds(new Set(paginatedExceptions.map(e => e.id)));
     }
   };
 
@@ -354,7 +374,7 @@ export default function ExceptionQueue() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredExceptions.map(exc => {
+                  {paginatedExceptions.map(exc => {
                     const isSelected = selectedExc?.id === exc.id;
                     const isChecked = selectedIds.has(exc.id);
                     return (
@@ -403,6 +423,35 @@ export default function ExceptionQueue() {
               </table>
             )}
           </div>
+
+          {/* Pagination Controls Footer */}
+          {filteredExceptions.length > 0 && (
+            <div className="px-4 py-2.5 border-t border-slate-200/80 bg-slate-50/60 flex items-center justify-between text-xs text-slate-600 shrink-0">
+              <span className="text-[11px] font-medium text-slate-500">
+                Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredExceptions.length)} of {filteredExceptions.length}
+              </span>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white transition-colors cursor-pointer"
+                >
+                  Prev
+                </button>
+                <span className="px-2 text-[11px] font-mono text-slate-600">
+                  {page}/{totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white transition-colors cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
