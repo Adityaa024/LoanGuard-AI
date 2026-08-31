@@ -459,21 +459,21 @@ export default function OperatorView() {
         <div className="lg:col-span-7 saas-card p-0 flex flex-col overflow-hidden">
           
           {/* Table Header & Search */}
-          <div className="p-4 border-b border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
+          <div className="p-4 border-b border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="min-w-0">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-500" />
+                <Clock className="w-4 h-4 text-slate-500 shrink-0" />
                 <span>Ingestion Lineage & Batch Audit</span>
               </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">Historical record of source tape files and validation results</p>
+              <p className="text-[11px] text-slate-400 mt-0.5 truncate">Historical record of source tape files and validation results</p>
             </div>
 
-            <div className="relative w-full sm:w-56">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="relative w-full sm:w-64 shrink-0">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" />
               <input 
                 type="text" 
                 placeholder="Filter batches..." 
-                className="input-field pl-8 py-1.5 text-xs"
+                className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
