@@ -286,10 +286,19 @@ export default function ExceptionQueue() {
             <input 
               type="text" 
               placeholder="Search ID, Rule, Field or Violation..." 
-              className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
+              className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-8 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-md hover:bg-slate-100 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {availableRules.length > 0 && (
@@ -942,18 +951,27 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
             <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
               Reviewer Note (Audit Trail)
             </label>
-            <div className="flex gap-1.5 text-[10px]">
+            <div className="flex flex-wrap gap-1 text-[10px]">
               <button 
                 onClick={() => applyNotePreset('Verified against promissory note.')}
                 className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] hover:bg-slate-50 font-medium cursor-pointer"
+                title="Preset note for note verification"
               >
-                + Verified Note
+                + Note Verified
               </button>
               <button 
                 onClick={() => applyNotePreset('Applied AI suggestion after cross-checking data.')}
                 className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] hover:bg-slate-50 font-medium cursor-pointer"
+                title="Preset note for AI acceptance"
               >
                 + Accepted AI
+              </button>
+              <button 
+                onClick={() => applyNotePreset('Reconciled against servicer month-end tape.')}
+                className="text-indigo-600 hover:text-indigo-700 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] hover:bg-slate-50 font-medium cursor-pointer"
+                title="Preset note for servicer match"
+              >
+                + Servicer Match
               </button>
             </div>
           </div>

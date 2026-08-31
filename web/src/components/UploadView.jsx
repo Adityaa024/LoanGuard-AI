@@ -358,9 +358,16 @@ export default function OperatorView() {
             {/* Upload Result Feedback */}
             {result && result.success && (
               <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <div className="text-emerald-800 text-xs font-bold flex items-center gap-1.5 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Ingestion Completed Successfully</span>
+                <div className="text-emerald-800 text-xs font-bold flex items-center justify-between gap-1.5 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Ingestion Completed Successfully</span>
+                  </div>
+                  {result.exceptionCount > 0 && (
+                    <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">
+                      {result.exceptionCount} Exceptions Flagged
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="bg-white p-2 rounded-lg border border-slate-100 shadow-xs">
@@ -376,6 +383,21 @@ export default function OperatorView() {
                     <div className="font-mono font-bold text-amber-700 mt-0.5">{result.exceptionCount}</div>
                   </div>
                 </div>
+
+                {result.exceptionCount > 0 && (
+                  <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-600">Ready for reviewer triage:</span>
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('switch_tab', { detail: 'reviewer' }));
+                      }}
+                      className="text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-white border border-indigo-200 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-colors inline-flex items-center gap-1 cursor-pointer shadow-xs"
+                    >
+                      <span>Review Exceptions ({result.exceptionCount})</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

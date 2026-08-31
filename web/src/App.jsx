@@ -75,7 +75,16 @@ export default function App() {
     if (!isAuthenticated) return;
     fetchSummary()
     const interval = setInterval(fetchSummary, 6000)
-    return () => clearInterval(interval)
+    
+    const handleSwitchTab = (e) => {
+      if (e.detail) setActiveTab(e.detail);
+    };
+    window.addEventListener('switch_tab', handleSwitchTab);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('switch_tab', handleSwitchTab);
+    };
   }, [fetchSummary, isAuthenticated])
 
   const handleLoginSuccess = (userData) => {
