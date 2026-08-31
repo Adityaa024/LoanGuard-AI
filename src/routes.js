@@ -4,14 +4,24 @@ import crypto from 'node:crypto'
 import multer from 'multer'
 import jwt from 'jsonwebtoken'
 import { fileURLToPath } from 'node:url'
-import { JSDOM } from 'jsdom'
-import createDOMPurify from 'dompurify'
 import { buildSystem } from './system.js'
 import { parse } from 'csv-parse/sync'
 import { getDb } from './db/index.js'
 
-const window = new JSDOM('').window
-const DOMPurify = createDOMPurify(window)
+// Native robust XSS sanitization without heavy JSDOM/CJS dependencies
+const DOMPurify = {
+  sanitize: (str) => {
+    if (typeof str !== 'string') return ''
+    return str
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/on\w+\s*=\s*(['"]).*?\1/gi, '')
+      .replace(/on\w+\s*=\s*[^>\s]+/gi, '')
+      .replace(/javascript\s*:/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .trim()
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'hive-super-secret-key-for-demo'
 
