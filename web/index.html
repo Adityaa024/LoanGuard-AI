@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" style="background-color: #0a0a0a;">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,107 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      html, body {
-        background-color: #0a0a0a;
-        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-        color: #f8fafc;
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-      .pre-loader-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        width: 100%;
-        background-color: #0a0a0a;
-        background-image: radial-gradient(#ffffff0a 1px, transparent 1px);
-        background-size: 24px 24px;
-        gap: 1.25rem;
-      }
-      .pre-loader-logo {
-        width: 54px;
-        height: 54px;
-        background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-        border-radius: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 35px rgba(16, 185, 129, 0.35);
-        border: 1px solid rgba(16, 185, 129, 0.4);
-        position: relative;
-        animation: pulseLogo 2s infinite ease-in-out;
-      }
-      .pre-loader-spinner {
-        width: 22px;
-        height: 22px;
-        border: 2px solid rgba(255, 255, 255, 0.15);
-        border-top-color: #10b981;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      .pre-loader-title {
-        font-size: 1.35rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: #ffffff;
-        text-align: center;
-      }
-      .pre-loader-badge {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: 2px 8px;
-        border-radius: 9999px;
-        background: rgba(16, 185, 129, 0.1);
-        color: #34d399;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        margin-left: 6px;
-        vertical-align: middle;
-      }
-      .pre-loader-sub {
-        font-size: 0.75rem;
-        color: #9ca3af;
-        font-weight: 500;
-        max-width: 320px;
-        line-height: 1.4;
-        text-align: center;
-        margin-top: 6px;
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      @keyframes pulseLogo {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(16, 185, 129, 0.3); }
-        50% { transform: scale(1.04); box-shadow: 0 0 45px rgba(16, 185, 129, 0.55); }
-      }
-    </style>
   </head>
-  <body class="bg-neutral-950 font-sans antialiased text-white">
-    <div id="root">
-      <div class="pre-loader-container">
-        <div class="pre-loader-logo">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/>
-            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>
-            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/>
-            <path d="M10 6h4"/>
-            <path d="M10 10h4"/>
-            <path d="M10 14h4"/>
-            <path d="M10 18h4"/>
-          </svg>
-        </div>
-        <div style="text-align: center;">
-          <div class="pre-loader-title">LoanGuard-AI <span class="pre-loader-badge">PRO COPILOT</span></div>
-          <div class="pre-loader-sub">Intelligent Loan Tape Securitization & Continuous Governance Swarm</div>
-        </div>
-        <div class="pre-loader-spinner" style="margin-top: 0.5rem;"></div>
-      </div>
-    </div>
+  <body class="bg-neutral-950 font-sans antialiased text-slate-900">
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

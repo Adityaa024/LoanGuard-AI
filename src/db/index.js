@@ -138,25 +138,16 @@ export async function getDb() {
     }
   }
 
-  // Performance optimization PRAGMAs & Indexes
+  // Migration for upload_batches
   try {
-    await dbInstance.exec(`
-      PRAGMA journal_mode = WAL;
-      PRAGMA synchronous = NORMAL;
-      PRAGMA cache_size = -64000;
-      PRAGMA temp_store = MEMORY;
-
-      CREATE INDEX IF NOT EXISTS idx_loans_upload_batch ON loans(upload_batch_id, validation_status);
-      CREATE INDEX IF NOT EXISTS idx_loans_validation_status ON loans(validation_status);
-      CREATE INDEX IF NOT EXISTS idx_loans_verified_at ON loans(verified_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_exceptions_status_sev ON exceptions(status, severity);
-      CREATE INDEX IF NOT EXISTS idx_exceptions_loan_status ON exceptions(loan_id, status);
-      CREATE INDEX IF NOT EXISTS idx_audit_logs_loan ON audit_logs(loanId);
-      CREATE INDEX IF NOT EXISTS idx_audit_logs_seq ON audit_logs(seq);
-      CREATE INDEX IF NOT EXISTS idx_upload_batches_time ON upload_batches(uploaded_at DESC);
-    `)
+    await dbInstance.exec(`ALTER TABLE upload_batches ADD COLUMN file_hash TEXT;`)
   } catch (e) {
-    // ignore index creation errors
+    // ignore if already exists
+  }
+  try {
+    await dbInstance.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_upload_batches_file_hash ON upload_batches(file_hash);`)
+  } catch (e) {
+    // ignore
   }
 
   return dbInstance

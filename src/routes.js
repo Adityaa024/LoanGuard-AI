@@ -219,64 +219,27 @@ export async function registerRoutes(app, { ROOT }) {
     }
   })
 
-  // ---- Summary API (High-Speed Single-Pass Aggregation) ----
+  // ---- Summary API ----
   const handleSummary = async (req, res) => {
     try {
       const db = await getDb()
-      const [loanStats, excStats, uploadStats] = await Promise.all([
-        db.get(`
-          SELECT 
-            COUNT(CASE WHEN validation_status != 'pending' THEN 1 END) as total_loans,
-            COUNT(CASE WHEN validation_status = 'valid' THEN 1 END) as valid_loans,
-            COUNT(CASE WHEN validation_status = 'has_exceptions' THEN 1 END) as exception_loans,
-            COUNT(CASE WHEN validation_status = 'verified' THEN 1 END) as verified_loans
-          FROM loans
-        `),
-        db.get(`
-          SELECT 
-            COUNT(*) as total_exceptions,
-            COUNT(CASE WHEN status = 'open' THEN 1 END) as open_exceptions,
-            COUNT(CASE WHEN status = 'open' AND severity = 'critical' THEN 1 END) as critical_exceptions,
-            COUNT(CASE WHEN status = 'open' AND severity = 'high' THEN 1 END) as high_exceptions,
-            COUNT(CASE WHEN status = 'open' AND severity = 'medium' THEN 1 END) as medium_exceptions,
-            COUNT(CASE WHEN status = 'open' AND severity = 'low' THEN 1 END) as low_exceptions
-          FROM exceptions
-        `),
-        db.get(`SELECT COUNT(*) as count FROM upload_batches`)
-      ])
-
-      const totalLoans = loanStats?.total_loans || 0
-      const validLoans = loanStats?.valid_loans || 0
-      const exceptionLoans = loanStats?.exception_loans || 0
-      const verifiedLoans = loanStats?.verified_loans || 0
-      const totalExceptions = excStats?.total_exceptions || 0
-      const openExceptions = excStats?.open_exceptions || 0
-      const uploadsCount = uploadStats?.count || 0
-      const criticalExceptions = excStats?.critical_exceptions || 0
-      const highExceptions = excStats?.high_exceptions || 0
-      const mediumExceptions = excStats?.medium_exceptions || 0
-      const lowExceptions = excStats?.low_exceptions || 0
+      const totalLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status != 'pending'`)).count
+      const validLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'valid'`)).count
+      const exceptionLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'has_exceptions'`)).count
+      const verifiedLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'verified'`)).count
+      const totalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions`)).count
+      const openExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open'`)).count
+      const uploadsCount = (await db.get(`SELECT COUNT(*) as count FROM upload_batches`)).count
+      
+      // Real severity breakdown from DB
+      const criticalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'critical'`)).count
+      const highExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'high'`)).count
+      const mediumExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'medium'`)).count
+      const lowExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'low'`)).count
       
       const data_quality_score = totalLoans > 0 ? Math.round(((validLoans + verifiedLoans) / totalLoans) * 100) : 100
       
-      res.json({
-        success: true,
-        data: {
-          total_loans: totalLoans,
-          valid_loans: validLoans,
-          exception_loans: exceptionLoans,
-          verified_loans: verifiedLoans,
-          total_exceptions: totalExceptions,
-          open_exceptions: openExceptions,
-          resolved_exceptions: totalExceptions - openExceptions,
-          uploads_count: uploadsCount,
-          data_quality_score,
-          critical_exceptions: criticalExceptions,
-          high_exceptions: highExceptions,
-          medium_exceptions: mediumExceptions,
-          low_exceptions: lowExceptions
-        }
-      })
+      res.json({ success: true, data: { total_loans: totalLoans, valid_loans: validLoans, exception_loans: exceptionLoans, verified_loans: verifiedLoans, total_exceptions: totalExceptions, open_exceptions: openExceptions, resolved_exceptions: totalExceptions - openExceptions, uploads_count: uploadsCount, data_quality_score, critical_exceptions: criticalExceptions, high_exceptions: highExceptions, medium_exceptions: mediumExceptions, low_exceptions: lowExceptions } })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
@@ -288,20 +251,10 @@ export async function registerRoutes(app, { ROOT }) {
     try {
       const db = await getDb()
       const batches = await db.all(`
-        SELECT 
-          u.*,
-          COALESCE(l.total_records, 0) as total_records,
-          COALESCE(l.exception_records, 0) as exception_records
-        FROM upload_batches u
-        LEFT JOIN (
-          SELECT 
-            upload_batch_id,
-            COUNT(*) as total_records,
-            COUNT(CASE WHEN validation_status = 'has_exceptions' THEN 1 END) as exception_records
-          FROM loans
-          WHERE upload_batch_id IS NOT NULL
-          GROUP BY upload_batch_id
-        ) l ON u.id = l.upload_batch_id
+        SELECT u.*, 
+               (SELECT COUNT(*) FROM loans WHERE upload_batch_id = u.id) as total_records,
+               (SELECT COUNT(*) FROM loans WHERE upload_batch_id = u.id AND validation_status = 'has_exceptions') as exception_records
+        FROM upload_batches u 
         ORDER BY u.uploaded_at DESC 
         LIMIT 50
       `)
@@ -334,39 +287,17 @@ export async function registerRoutes(app, { ROOT }) {
   app.get('/loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetLoanById)
 
   const handleGetExceptions = async (req, res) => {
-    try {
-      const db = await getDb()
-      const limit = Math.min(Math.max(parseInt(req.query.limit) || 500, 1), 2000)
-      const exc = await db.all(`
-        SELECT e.*, l.loan_id as original_loan_id 
-        FROM exceptions e 
-        JOIN loans l ON e.loan_id = l.id 
-        WHERE e.status = 'open' 
-        ORDER BY e.id DESC 
-        LIMIT ?
-      `, [limit])
-      res.json({ success: true, data: exc.map(e => ({...e, loan_id: e.original_loan_id})) })
-    } catch (e) {
-      res.status(500).json({ success: false, error: e.message })
-    }
+    const db = await getDb()
+    const exc = await db.all(`SELECT e.*, l.loan_id as original_loan_id FROM exceptions e JOIN loans l ON e.loan_id = l.id WHERE e.status = 'open' ORDER BY e.id DESC`)
+    res.json({ success: true, data: exc.map(e => ({...e, loan_id: e.original_loan_id})) })
   }
   app.get('/api/exceptions', requireRole(['operator', 'reviewer', 'consumer']), handleGetExceptions)
   app.get('/exceptions', requireRole(['operator', 'reviewer', 'consumer']), handleGetExceptions)
 
   const handleGetVerifiedLoans = async (req, res) => {
-    try {
-      const db = await getDb()
-      const limit = Math.min(Math.max(parseInt(req.query.limit) || 500, 1), 2000)
-      const verified = await db.all(`
-        SELECT * FROM loans 
-        WHERE validation_status = 'verified' 
-        ORDER BY verified_at DESC 
-        LIMIT ?
-      `, [limit])
-      res.json({ success: true, data: verified })
-    } catch (e) {
-      res.status(500).json({ success: false, error: e.message })
-    }
+    const db = await getDb()
+    const verified = await db.all(`SELECT * FROM loans WHERE validation_status = 'verified' ORDER BY verified_at DESC`)
+    res.json({ success: true, data: verified })
   }
   app.get('/api/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
   app.get('/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
