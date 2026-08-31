@@ -625,7 +625,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
 
   // ---- AI Batch Summary API ----
-  app.post('/api/ai/batch-summary', requireRole(['reviewer', 'operator', 'consumer']), async (req, res) => {
+  const handleBatchAiSummary = async (req, res) => {
     try {
       const db = await getDb()
       const openExceptions = await db.all(`
@@ -641,9 +641,9 @@ export async function registerRoutes(app, { ROOT }) {
       let summaryText = `Identified ${totalOpen} active exceptions across the current loan portfolio. `
       if (openExceptions.length > 0) {
         const topIssue = openExceptions[0]
-        summaryText += `Primary cluster: ${topIssue.rule_name} (${topIssue.count} occurrences, severity: ${topIssue.severity}). `
+        summaryText += `Primary anomaly cluster: ${topIssue.rule_name} (${topIssue.count} occurrences, severity: ${topIssue.severity}). `
       }
-      summaryText += `Recommended remediation: Batch-approve formatting anomalies (state uppercase, decimal corrections) and escalate cross-source balance discrepancies to servicer verification teams.`
+      summaryText += `Recommended remediation: Batch-approve formatting anomalies (state uppercase, decimal corrections) and inspect cross-source balance discrepancies.`
 
       res.json({
         success: true,
@@ -657,7 +657,9 @@ export async function registerRoutes(app, { ROOT }) {
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
-  })
+  }
+  app.post('/api/ai/batch-summary', handleBatchAiSummary)
+  app.get('/api/ai/batch-summary', handleBatchAiSummary)
 
   // ---- AI Cross-Source Conflict Reconciliation ----
   app.post('/api/ai/compare-conflicts', requireRole(['reviewer', 'operator', 'consumer']), async (req, res) => {
