@@ -24,8 +24,9 @@ export class AuditLog {
       }
     }
 
-    const seq = this.#entries.length + 1
+    const prevSeq = this.#entries.length ? this.#entries[this.#entries.length - 1].seq : 0
     const prevHash = this.#entries.length ? this.#entries[this.#entries.length - 1].hash : GENESIS
+    const seq = prevSeq + 1
 
     const body = {
       seq,
@@ -47,31 +48,33 @@ export class AuditLog {
 
     const frozen = Object.freeze({ ...body })
     this.#entries.push(frozen)
-    
-    // Async save to SQLite without blocking
-    import('../db/index.js').then(({ getDb }) => {
-      getDb().then(db => {
-        db.run(`
-          INSERT INTO audit_logs (id, seq, agentId, actionType, loanId, policyId, rule, decision, escalated, amount, reason, authorizer, ts, prevHash, hash, details)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          body.id, body.seq, body.agentId, body.actionType, body.loanId, body.policyId, body.rule, 
-          body.decision, body.escalated, body.amount, body.reason, body.authorizer, body.ts, body.prevHash, body.hash,
-          fields.details ? JSON.stringify(fields.details) : null
-        ]).catch(console.error)
-      }).catch(console.error)
-    }).catch(console.error)
+
+    // Sync save to SQLite in background
+    getDb().then(db => {
+      db.run(`
+        INSERT INTO audit_logs (id, seq, agentId, actionType, loanId, policyId, rule, decision, escalated, amount, reason, authorizer, ts, prevHash, hash, details)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        body.id, body.seq, body.agentId, body.actionType, body.loanId, body.policyId, body.rule, 
+        body.decision, body.escalated ? 1 : 0, body.amount, body.reason, body.authorizer, body.ts, body.prevHash, body.hash,
+        fields.details ? JSON.stringify(fields.details) : null
+      ]).catch(() => {})
+    }).catch(() => {})
 
     return frozen
   }
 
   async list({ limit = null, sinceSeq = 0 } = {}) {
+    if (this.#entries.length > 0) {
+      let filtered = this.#entries.filter(e => e.seq > sinceSeq)
+      if (limit) filtered = filtered.slice(-limit)
+      return filtered
+    }
     const db = await getDb()
     let query = `SELECT * FROM audit_logs WHERE seq > ? ORDER BY seq ASC`
     const params = [sinceSeq]
     
     if (limit) {
-      // For limit, we want the LAST N records.
       query = `
         SELECT * FROM (
           SELECT * FROM audit_logs WHERE seq > ? ORDER BY seq DESC LIMIT ?
@@ -88,6 +91,9 @@ export class AuditLog {
   }
 
   async get(seq) {
+    if (this.#entries.length > 0) {
+      return this.#entries.find(e => e.seq === seq) || null
+    }
     const db = await getDb()
     const row = await db.get(`SELECT * FROM audit_logs WHERE seq = ?`, [seq])
     if (row && row.details) row.details = JSON.parse(row.details)
@@ -95,6 +101,9 @@ export class AuditLog {
   }
 
   async size() {
+    if (this.#entries.length > 0) {
+      return this.#entries.length
+    }
     const db = await getDb()
     const row = await db.get(`SELECT COUNT(*) as count FROM audit_logs`)
     return row.count
@@ -105,12 +114,11 @@ export class AuditLog {
   delete() { throw new Error('append-only: audit entries cannot be deleted') }
 
   async verify() {
-    const db = await getDb()
-    const rows = await db.all(`SELECT * FROM audit_logs ORDER BY seq ASC`)
+    const list = this.#entries.length ? this.#entries : (await this.list())
     let prevHash = GENESIS
     
-    for (let i = 0; i < rows.length; i++) {
-      const e = rows[i]
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i]
       if (e.prevHash !== prevHash) {
         return { valid: false, brokenAt: e.seq, reason: 'prevHash mismatch' }
       }
@@ -118,14 +126,14 @@ export class AuditLog {
       const body = {
         seq: e.seq,
         agentId: e.agentId,
-        actionType: e.actionType,
-        loanId: e.loanId,
+        actionType: e.actionType ?? null,
+        loanId: e.loanId ?? null,
         policyId: e.policyId,
-        rule: e.rule,
+        rule: e.rule ?? null,
         decision: e.decision,
         escalated: !!e.escalated,
-        amount: e.amount,
-        reason: e.reason,
+        amount: e.amount ?? null,
+        reason: e.reason ?? null,
         authorizer: e.authorizer,
         ts: e.ts,
         prevHash: e.prevHash
@@ -138,6 +146,6 @@ export class AuditLog {
       }
       prevHash = e.hash
     }
-    return { valid: true, length: rows.length, head: prevHash }
+    return { valid: true, length: list.length, head: prevHash }
   }
 }

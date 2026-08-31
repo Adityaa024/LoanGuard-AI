@@ -52,7 +52,8 @@ export async function registerRoutes(app, { ROOT }) {
     res.json({ success: true, token, user })
   })
   const sys = buildSystem()
-  const { orchestrator, guard, audit, events, ledger } = sys
+  const { orchestrator, guard, audit, events, ledger, backend } = sys
+  const engine = backend
 
   // ---- Live event stream (SSE) ----
   app.get('/events', (req, res) => {
@@ -82,11 +83,14 @@ export async function registerRoutes(app, { ROOT }) {
       let validCount = 0
       let exceptionCount = 0
 
-      // Pre-load all existing loan_ids into a Set (1 query instead of N) to avoid N+1 problem
-      const existingRows = await db.all(`SELECT loan_id FROM loans`)
+      // Pre-load all existing loans into a Map and Set (1 query instead of N) to avoid N+1 problem
+      const existingRows = await db.all(`SELECT * FROM loans`)
+      const existingLoanMap = new Map(existingRows.map(r => [r.loan_id, r]))
       const existingLoanIds = new Set(existingRows.map(r => r.loan_id))
       // Also track loan_ids seen within this batch (for intra-file duplicates)
       const batchSeenIds = new Set()
+      const borrowerCombos = new Set()
+      const isServicerTape = (req.file.originalname && req.file.originalname.toLowerCase().includes('servicer'))
 
       await db.run('BEGIN TRANSACTION')
       try {
@@ -95,28 +99,40 @@ export async function registerRoutes(app, { ROOT }) {
           const rawLoanId = (row.loan_id || row.LoanID || '').trim()
           const record = {
             loan_id: rawLoanId || `MISSING-${crypto.randomUUID().slice(0,8)}`,
+            borrower_id: row.borrower_id || row.BorrowerID || '',
             borrower_name: row.borrower_name || row.BorrowerName || '',
             property_state: row.property_state || row.PropertyState || '',
             principal_balance: parseFloat(row.principal_balance || row.PrincipalBalance || 0),
+            original_principal: parseFloat(row.original_principal || row.OriginalPrincipal || 0),
+            current_balance: parseFloat(row.current_balance || row.CurrentBalance || 0),
             interest_rate: parseFloat(row.interest_rate || row.InterestRate || 0),
             origination_date: row.origination_date || row.OriginationDate || '',
             maturity_date: row.maturity_date || row.MaturityDate || '',
+            term_months: parseInt(row.term_months || row.TermMonths || 0),
+            loan_purpose: row.loan_purpose || row.LoanPurpose || '',
+            payment_status: row.payment_status || row.PaymentStatus || '',
+            days_past_due: parseInt(row.days_past_due || row.DaysPastDue || 0),
+            document_status: row.document_status || row.DocumentStatus || '',
+            loan_status: row.loan_status || row.LoanStatus || '',
+            last_updated_at: row.last_updated_at || row.LastUpdatedAt || '',
+            source_system: row.source_system || row.SourceSystem || (isServicerTape ? 'Servicer_A' : 'Origination_Tape'),
           }
 
           const internalId = 'ln_' + crypto.randomUUID()
 
-          // Cross-upload AND intra-file duplicate detection using in-memory Set (O(1))
-          const isDuplicate = existingLoanIds.has(record.loan_id) || batchSeenIds.has(record.loan_id)
+          // If this is a secondary servicer tape update, it's not a hard duplicate; check for conflict
+          const isServicerUpdate = isServicerTape || (record.source_system && record.source_system.toLowerCase().includes('servicer'))
+          const isDuplicate = !isServicerUpdate && (existingLoanIds.has(record.loan_id) || batchSeenIds.has(record.loan_id))
           batchSeenIds.add(record.loan_id)
 
           if (isDuplicate) {
             // Force escalate as duplicate
             exceptionCount++
             await db.run(`
-              INSERT INTO loans (id, upload_batch_id, loan_id, borrower_name, property_state, principal_balance, interest_rate, origination_date, maturity_date, validation_status)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO loans (id, upload_batch_id, loan_id, borrower_id, borrower_name, property_state, principal_balance, original_principal, current_balance, interest_rate, origination_date, maturity_date, term_months, loan_purpose, payment_status, days_past_due, document_status, loan_status, last_updated_at, source_system, validation_status)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [
-              internalId, batchId, record.loan_id, record.borrower_name, record.property_state, record.principal_balance, record.interest_rate, record.origination_date, record.maturity_date,
+              internalId, batchId, record.loan_id, record.borrower_id, record.borrower_name, record.property_state, record.principal_balance, record.original_principal, record.current_balance, record.interest_rate, record.origination_date, record.maturity_date, record.term_months, record.loan_purpose, record.payment_status, record.days_past_due, record.document_status, record.loan_status, record.last_updated_at, record.source_system,
               'has_exceptions'
             ])
             await db.run(`
@@ -128,25 +144,27 @@ export async function registerRoutes(app, { ROOT }) {
             continue
           }
 
-          // Validate via Warden
-          const action = { type: 'ingest_loan_record', agentId: 'system-uploader', loanId: internalId, record }
-          const { decision } = await orchestrator.dispatch(action)
+          // Evaluate with the Policy Engine
+          const evalResult = engine.evaluate(
+            { type: 'ingest_loan_record', record },
+            { existingLoanIds, batchSeenIds, borrowerCombos, existingLoanMap }
+          )
 
-          const isException = decision.decision === 'escalate' || decision.decision === 'deny'
+          const isException = evalResult.decision === 'escalate' || evalResult.decision === 'deny'
           if (isException) exceptionCount++
           else validCount++
 
           // Save to DB
           await db.run(`
-            INSERT INTO loans (id, upload_batch_id, loan_id, borrower_name, property_state, principal_balance, interest_rate, origination_date, maturity_date, validation_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO loans (id, upload_batch_id, loan_id, borrower_id, borrower_name, property_state, principal_balance, original_principal, current_balance, interest_rate, origination_date, maturity_date, term_months, loan_purpose, payment_status, days_past_due, document_status, loan_status, last_updated_at, source_system, validation_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            internalId, batchId, record.loan_id, record.borrower_name, record.property_state, record.principal_balance, record.interest_rate, record.origination_date, record.maturity_date,
+            internalId, batchId, record.loan_id, record.borrower_id, record.borrower_name, record.property_state, record.principal_balance, record.original_principal, record.current_balance, record.interest_rate, record.origination_date, record.maturity_date, record.term_months, record.loan_purpose, record.payment_status, record.days_past_due, record.document_status, record.loan_status, record.last_updated_at, record.source_system,
             isException ? 'has_exceptions' : 'valid'
           ])
 
-          if (isException && decision.checks) {
-            for (const check of decision.checks) {
+          if (isException && Array.isArray(evalResult.checks) && evalResult.checks.length > 0) {
+            for (const check of evalResult.checks) {
               await db.run(`
                 INSERT INTO exceptions (id, loan_id, rule_id, rule_name, field, severity, description, current_value)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -172,7 +190,7 @@ export async function registerRoutes(app, { ROOT }) {
   app.get('/api/summary', async (req, res) => {
     try {
       const db = await getDb()
-      const totalLoans = (await db.get(`SELECT COUNT(*) as count FROM loans`)).count
+      const totalLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status != 'pending'`)).count
       const validLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'valid'`)).count
       const exceptionLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'has_exceptions'`)).count
       const verifiedLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'verified'`)).count
@@ -217,8 +235,8 @@ export async function registerRoutes(app, { ROOT }) {
     const loans = await db.all(`SELECT * FROM loans ORDER BY id DESC LIMIT 100`)
     res.json({ success: true, data: loans })
   }
-  app.get('/api/loans', handleGetLoans)
-  app.get('/loans', handleGetLoans)
+  app.get('/api/loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetLoans)
+  app.get('/loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetLoans)
 
   const handleGetLoanById = async (req, res) => {
     try {
@@ -230,24 +248,24 @@ export async function registerRoutes(app, { ROOT }) {
       res.status(500).json({ success: false, error: e.message })
     }
   }
-  app.get('/api/loans/:id', handleGetLoanById)
-  app.get('/loans/:id', handleGetLoanById)
+  app.get('/api/loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetLoanById)
+  app.get('/loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetLoanById)
 
   const handleGetExceptions = async (req, res) => {
     const db = await getDb()
     const exc = await db.all(`SELECT e.*, l.loan_id as original_loan_id FROM exceptions e JOIN loans l ON e.loan_id = l.id WHERE e.status = 'open' ORDER BY e.id DESC`)
     res.json({ success: true, data: exc.map(e => ({...e, loan_id: e.original_loan_id})) })
   }
-  app.get('/api/exceptions', handleGetExceptions)
-  app.get('/exceptions', handleGetExceptions)
+  app.get('/api/exceptions', requireRole(['operator', 'reviewer', 'consumer']), handleGetExceptions)
+  app.get('/exceptions', requireRole(['operator', 'reviewer', 'consumer']), handleGetExceptions)
 
   const handleGetVerifiedLoans = async (req, res) => {
     const db = await getDb()
     const verified = await db.all(`SELECT * FROM loans WHERE validation_status = 'verified' ORDER BY verified_at DESC`)
     res.json({ success: true, data: verified })
   }
-  app.get('/api/verified-loans', handleGetVerifiedLoans)
-  app.get('/verified-loans', handleGetVerifiedLoans)
+  app.get('/api/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
+  app.get('/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
 
   const handleGetVerifiedLoanById = async (req, res) => {
     try {
@@ -259,8 +277,8 @@ export async function registerRoutes(app, { ROOT }) {
       res.status(500).json({ success: false, error: e.message })
     }
   }
-  app.get('/api/verified-loans/:id', handleGetVerifiedLoanById)
-  app.get('/verified-loans/:id', handleGetVerifiedLoanById)
+  app.get('/api/verified-loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoanById)
+  app.get('/verified-loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoanById)
 
   // Server-side CSV export for verified loans (auditable, controlled)
   app.get('/api/export/verified-loans', requireRole(['consumer']), async (req, res) => {
@@ -273,6 +291,20 @@ export async function registerRoutes(app, { ROOT }) {
         csvRows.push(headers.map(h => JSON.stringify(row[h] ?? '')).join(','))
       }
       const csv = csvRows.join('\n')
+      
+      await audit.append({
+        agentId: req.user.name,
+        actionType: 'export_verified_loans',
+        loanId: 'ALL',
+        policyId: 'POL-EXPORT',
+        rule: 'data_export',
+        decision: 'allow',
+        escalated: false,
+        reason: `Exported ${verified.length} verified loans`,
+        authorizer: req.user.name,
+        ts: new Date().toISOString()
+      })
+
       res.set({ 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename="verified_loans_export.csv"' })
       res.send(csv)
     } catch (e) {
@@ -283,15 +315,25 @@ export async function registerRoutes(app, { ROOT }) {
   const handleGetAuditForLoan = async (req, res) => {
     try {
       const entries = await audit.list()
-      const loanEntries = entries.filter(e => e.loanId === req.params.loanId)
+      if (req.params.loanId === 'ALL') {
+        return res.json({ success: true, data: entries })
+      }
+      const db = await getDb()
+      const loan = await db.get(`SELECT id, loan_id FROM loans WHERE id = ? OR loan_id = ?`, [req.params.loanId, req.params.loanId])
+      const targetIds = new Set([req.params.loanId])
+      if (loan) {
+        if (loan.id) targetIds.add(loan.id)
+        if (loan.loan_id) targetIds.add(loan.loan_id)
+      }
+      const loanEntries = entries.filter(e => targetIds.has(e.loanId) || e.loanId === 'ALL')
       res.json({ success: true, data: loanEntries })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
   }
-  app.get('/api/audit/:loanId', handleGetAuditForLoan)
-  app.get('/api/audit/loan/:loanId', handleGetAuditForLoan)
-  app.get('/audit/:loanId', handleGetAuditForLoan)
+  app.get('/api/audit/:loanId', requireRole(['operator', 'reviewer', 'consumer']), handleGetAuditForLoan)
+  app.get('/api/audit/loan/:loanId', requireRole(['operator', 'reviewer', 'consumer']), handleGetAuditForLoan)
+  app.get('/audit/:loanId', requireRole(['operator', 'reviewer', 'consumer']), handleGetAuditForLoan)
 
   // ---- Copilot/AI API ----
   app.post('/api/ai-review', requireRole(['reviewer']), async (req, res) => {
@@ -342,13 +384,47 @@ export async function registerRoutes(app, { ROOT }) {
           confidence = 0.8
           recommendation = `Convert the state code to the standard 2-letter abbreviation.`
           break
+        case 'POL-CONFLICT-001':
+          explanation = `Cross-source discrepancy detected between baseline loan tape and secondary servicer update (${exc.description}). Servicers often report asynchronous payoff events or payment timing lags.`
+          confidence = 0.88
+          suggestedValue = exc.current_value
+          recommendation = `Reconcile the servicer remittance statement. If servicer update is recent, accept the servicer current balance.`
+          break
+        case 'POL-BALCAP-001':
+          explanation = `Current loan balance exceeds the original principal balance, indicating negative amortization or uncapitalized delinquent interest without loan modification.`
+          confidence = 0.85
+          recommendation = `Verify loan restructuring agreement. If no modification exists, reset current balance to original principal.`
+          break
+        case 'POL-PAYST-001':
+          explanation = `Payment status is marked 'Current' but Days Past Due is greater than zero, creating an inconsistent credit reporting profile.`
+          confidence = 0.90
+          suggestedValue = 'Delinquent'
+          recommendation = `Align payment status to 'Delinquent' or reset Days Past Due to 0 if payment was posted.`
+          break
+        case 'POL-CLOSED-001':
+          explanation = `Loan is marked 'Closed' but still reflects a positive remaining balance.`
+          confidence = 0.95
+          suggestedValue = '0'
+          recommendation = `Set current balance to 0.00 for closed loan or reopen status if still active.`
+          break
+        case 'POL-DOC-001':
+          explanation = `Required statutory document status is empty or unavailable in loan tape.`
+          confidence = 0.75
+          suggestedValue = 'Available'
+          recommendation = `Check document repository vault and mark as Available if note is present.`
+          break
+        case 'POL-BORCMB-001':
+          explanation = `Identical borrower name, loan amount, and origination date detected across multiple loan entries.`
+          confidence = 0.80
+          recommendation = `Inspect for accidental duplicate loan entry or verify if borrower took multiple distinct loans on the same date.`
+          break
         default:
-          explanation = `An unknown exception occurred: ${exc.description}.`
+          explanation = `An exception occurred: ${exc.description}.`
           recommendation = `Manual review required.`
       }
 
       // Record AI intervention in Audit Log
-      audit.append({
+      await audit.append({
         agentId: 'copilot',
         actionType: 'ai_review',
         loanId: exc.loan_id,
@@ -361,6 +437,10 @@ export async function registerRoutes(app, { ROOT }) {
         ts: new Date().toISOString()
       })
 
+      // Store in DB
+      await db.run(`UPDATE exceptions SET ai_explanation = ?, suggested_value = ? WHERE id = ?`, 
+        [explanation, suggestedValue, exception_id])
+
       res.json({ 
         success: true, 
         data: { 
@@ -368,9 +448,107 @@ export async function registerRoutes(app, { ROOT }) {
           suggested_value: suggestedValue, 
           confidence, 
           severity_assessment: severityAssessment, 
-          recommendation 
+          recommendation,
+          model: 'LoanGuard-AI Copilot v1.0 (Rule-Based Diagnostic Engine)',
+          prompt: `Analyze exception ${exc.rule_id} on field ${exc.field} with value "${exc.current_value}"`,
+          timestamp: new Date().toISOString()
         } 
       })
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message })
+    }
+  })
+
+  // ---- AI Batch Summary API ----
+  app.post('/api/ai/batch-summary', requireRole(['reviewer', 'operator', 'consumer']), async (req, res) => {
+    try {
+      const db = await getDb()
+      const openExceptions = await db.all(`
+        SELECT e.rule_id, e.rule_name, e.severity, e.field, count(*) as count 
+        FROM exceptions e 
+        WHERE e.status = 'open' 
+        GROUP BY e.rule_id, e.severity
+        ORDER BY count DESC
+      `)
+
+      const totalOpen = openExceptions.reduce((acc, curr) => acc + curr.count, 0)
+      
+      let summaryText = `Identified ${totalOpen} active exceptions across the current loan portfolio. `
+      if (openExceptions.length > 0) {
+        const topIssue = openExceptions[0]
+        summaryText += `Primary cluster: ${topIssue.rule_name} (${topIssue.count} occurrences, severity: ${topIssue.severity}). `
+      }
+      summaryText += `Recommended remediation: Batch-approve formatting anomalies (state uppercase, decimal corrections) and escalate cross-source balance discrepancies to servicer verification teams.`
+
+      res.json({
+        success: true,
+        data: {
+          total_exceptions: totalOpen,
+          cluster_breakdown: openExceptions,
+          ai_summary: summaryText,
+          suggested_batch_action: 'Batch-approve low/medium formatting exceptions first; manually inspect critical negative balances.'
+        }
+      })
+    } catch (e) {
+      res.status(500).json({ success: false, error: e.message })
+    }
+  })
+
+  // ---- Batch Exception Resolution ----
+  app.post('/api/exceptions/batch-resolve', requireRole(['reviewer']), async (req, res) => {
+    try {
+      const { exception_ids, action = 'resolve', note = 'Batch resolved by reviewer' } = req.body
+      if (!Array.isArray(exception_ids) || exception_ids.length === 0) {
+        return res.status(400).json({ success: false, error: 'exception_ids must be a non-empty array' })
+      }
+
+      const db = await getDb()
+      const sanitizedNote = DOMPurify.sanitize(note)
+      let resolvedCount = 0
+
+      for (const id of exception_ids) {
+        const exc = await db.get(`SELECT * FROM exceptions WHERE id = ? AND status = 'open'`, [id])
+        if (!exc) continue
+
+        await db.run(`
+          UPDATE exceptions 
+          SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, resolution_note = ?
+          WHERE id = ?
+        `, [req.user.name, sanitizedNote, id])
+
+        // Check if all exceptions for this loan are now resolved
+        const remaining = await db.get(`SELECT count(*) as count FROM exceptions WHERE loan_id = ? AND status = 'open'`, [exc.loan_id])
+        if (remaining.count === 0) {
+          const loanRecord = await db.get(`SELECT * FROM loans WHERE id = ?`, [exc.loan_id])
+          if (loanRecord) {
+            const canonicalString = `${loanRecord.loan_id}|${loanRecord.borrower_name}|${loanRecord.principal_balance}|${loanRecord.interest_rate}|${loanRecord.origination_date}|${loanRecord.maturity_date}`
+            const recordHash = crypto.createHash('sha256').update(canonicalString).digest('hex')
+            await db.run(`
+              UPDATE loans 
+              SET validation_status = 'valid', is_verified = 1, verified_at = CURRENT_TIMESTAMP, 
+                  verified_by = ?, reviewer_decision = 'batch_approved', verified_hash = ?
+              WHERE id = ?
+            `, [req.user.name, recordHash, exc.loan_id])
+          }
+        }
+
+        await audit.append({
+          agentId: 'human-reviewer',
+          actionType: 'batch_exception_resolution',
+          loanId: exc.loan_id,
+          policyId: exc.rule_id,
+          rule: exc.rule_name,
+          decision: 'allow',
+          escalated: false,
+          reason: `Batch resolution (${action}): ${sanitizedNote}`,
+          authorizer: 'human',
+          ts: new Date().toISOString()
+        })
+
+        resolvedCount++
+      }
+
+      res.json({ success: true, count: resolvedCount, message: `Successfully resolved ${resolvedCount} exceptions in batch.` })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
@@ -380,7 +558,7 @@ export async function registerRoutes(app, { ROOT }) {
   app.patch('/api/exceptions/:id', requireRole(['reviewer']), async (req, res) => {
     try {
       const { action, note, corrected_value } = req.body
-      if (!['resolve', 'reject', 'override'].includes(action)) {
+      if (!['resolve', 'reject', 'override', 'request_correction'].includes(action)) {
         return res.status(400).json({ success: false, error: 'Invalid action' })
       }
 
@@ -390,6 +568,7 @@ export async function registerRoutes(app, { ROOT }) {
       const db = await getDb()
       const exc = await db.get(`SELECT * FROM exceptions WHERE id = ?`, [req.params.id])
       if (!exc) return res.status(404).json({ success: false, error: 'Exception not found' })
+      if (exc.status !== 'open') return res.status(400).json({ success: false, error: 'Exception is already resolved' })
 
       await db.run(`
         UPDATE exceptions 
@@ -399,11 +578,18 @@ export async function registerRoutes(app, { ROOT }) {
 
       // If resolving and a corrected value is provided, update the loan record
       if (action === 'resolve' && corrected_value !== undefined) {
-        await db.run(`UPDATE loans SET ${exc.field} = ? WHERE id = ?`, [corrected_value, exc.loan_id])
+        // Whitelist field to prevent SQL injection
+        const allowedFields = ['loan_id', 'borrower_id', 'borrower_name', 'property_state', 'principal_balance', 'original_principal', 'current_balance', 'interest_rate', 'origination_date', 'maturity_date', 'term_months', 'loan_purpose', 'payment_status', 'days_past_due', 'document_status', 'loan_status', 'last_updated_at', 'source_system']
+        if (allowedFields.includes(exc.field)) {
+          await db.run(`UPDATE loans SET ${exc.field} = ?, reviewer_decision = ?, ai_recommendation = ? WHERE id = ?`, 
+            [corrected_value, action, exc.ai_explanation || null, exc.loan_id])
+        }
+      } else {
+        await db.run(`UPDATE loans SET reviewer_decision = ? WHERE id = ?`, [action, exc.loan_id])
       }
 
       // Record to audit log
-      audit.append({
+      await audit.append({
         agentId: 'human-reviewer',
         actionType: 'exception_resolution',
         loanId: exc.loan_id,
@@ -413,18 +599,30 @@ export async function registerRoutes(app, { ROOT }) {
         escalated: false,
         reason: note || `Exception ${action}d manually`,
         authorizer: 'Reviewer',
-        ts: new Date().toISOString()
+        ts: new Date().toISOString(),
+        details: action === 'resolve' && corrected_value !== undefined ? JSON.stringify({ field: exc.field, oldValue: exc.current_value, newValue: corrected_value }) : null
       })
 
       // Check if loan is now fully verified (no open exceptions)
       const openExc = await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE loan_id = ? AND status = 'open'`, [exc.loan_id])
       if (openExc.count === 0) {
-        // Hash it
+        // Hash it using full record content
+        const loanData = await db.get(`SELECT * FROM loans WHERE id = ?`, [exc.loan_id])
         const crypto = await import('node:crypto')
-        const hash = crypto.createHash('sha256').update(exc.loan_id + Date.now()).digest('hex')
-        await db.run(`UPDATE loans SET validation_status = 'verified', is_verified = 1, verified_at = CURRENT_TIMESTAMP, verified_hash = ? WHERE id = ?`, [hash, exc.loan_id])
+        const hashPayload = JSON.stringify({
+          loan_id: loanData.loan_id,
+          borrower_name: loanData.borrower_name,
+          principal_balance: loanData.principal_balance,
+          interest_rate: loanData.interest_rate,
+          origination_date: loanData.origination_date,
+          maturity_date: loanData.maturity_date,
+          verified_by: req.user.name,
+          timestamp: Date.now()
+        })
+        const hash = crypto.createHash('sha256').update(hashPayload).digest('hex')
+        await db.run(`UPDATE loans SET validation_status = 'verified', is_verified = 1, verified_at = CURRENT_TIMESTAMP, verified_hash = ?, verified_by = ? WHERE id = ?`, [hash, req.user.name, exc.loan_id])
         
-        audit.append({
+        await audit.append({
           agentId: 'system',
           actionType: 'record_verified',
           loanId: exc.loan_id,

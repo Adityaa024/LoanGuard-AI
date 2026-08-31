@@ -33,7 +33,7 @@ export async function applyAuthoredPolicy({ guard, engine, audit }, { rule, acto
 
   // 4) Record the authoritative governance event on the hash chain.
   const ts = now.toISOString()
-  const logged = audit.append({
+  const logged = await audit.append({
     agentId: actor,
     actionType: 'policy.author',
     loanId: null,

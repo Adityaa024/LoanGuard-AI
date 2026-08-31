@@ -2,8 +2,16 @@
 
 process.env.HIVE_OFFLINE = '1'
 
-import { test } from 'node:test'
+import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+
+before(async () => {
+  const { getDb } = await import('../src/db/index.js')
+  const db = await getDb()
+  await db.run('DELETE FROM audit_logs')
+})
 
 import { compilePolicy } from '../src/policy/compiler.js'
 import { applyAuthoredPolicy } from '../src/policy/author.js'
@@ -40,7 +48,7 @@ test('#1 authored rule hot-reloads; Warden enforces it; authoring is logged and 
 
   // Author "no contact on Wednesdays" through the governed path.
   const { rule } = await compilePolicy('no contact on Wednesdays')
-  const auditBefore = sys.audit.size()
+  const auditBefore = await sys.audit.size()
   const res = await applyAuthoredPolicy(
     { guard: sys.guard, engine: sys.backend, audit: sys.audit },
     { rule, actor: 'compliance-officer-1', sourceText: 'no contact on Wednesdays', persist: false, now: wed }
@@ -53,14 +61,17 @@ test('#1 authored rule hot-reloads; Warden enforces it; authoring is logged and 
   assert.equal(after.policyId, rule.id)
 
   // Authoring governance is itself a logged, governed event.
-  const authored = sys.audit.list().find((e) => e.actionType === 'policy.author' && e.policyId === rule.id)
+  const auditList = await sys.audit.list()
+  const authored = auditList.find((e) => e.actionType === 'policy.author' && e.policyId === rule.id)
   assert.ok(authored, 'policy.author audit entry exists')
   assert.equal(authored.authorizer, 'human')
   assert.match(authored.reason, /no contact on Wednesdays/)
-  assert.ok(sys.audit.size() > auditBefore)
+  const auditSize = await sys.audit.size()
+  assert.ok(auditSize > auditBefore)
 
   // The append-only hash chain still verifies across the new entries.
-  assert.equal(sys.audit.verify().valid, true)
+  const verifyRes = await sys.audit.verify()
+  assert.equal(verifyRes.valid, true)
 })
 
 test('#1 invalid/ununderstood input is rejected, never written as authority', async () => {

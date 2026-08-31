@@ -145,46 +145,69 @@ export default function ExceptionQueue() {
     });
   };
 
-  // Bulk Resolution
+  const [showBatchAiModal, setShowBatchAiModal] = useState(false);
+  const [batchAiData, setBatchAiData] = useState(null);
+  const [batchAiLoading, setBatchAiLoading] = useState(false);
+
+  // AI Batch Summary
+  const fetchBatchAiSummary = async () => {
+    setBatchAiLoading(true);
+    setShowBatchAiModal(true);
+    try {
+      const token = localStorage.getItem('hive_token');
+      const res = await fetch('/api/ai/batch-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBatchAiData(data.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBatchAiLoading(false);
+    }
+  };
+
+  // Bulk Resolution using dedicated batch endpoint
   const handleBulkResolve = async (action = 'approve') => {
     if (selectedIds.size === 0) return;
     setBulkBusy(true);
     const ids = Array.from(selectedIds);
-    let resolvedCount = 0;
 
-    for (const id of ids) {
-      try {
-        const exc = exceptions.find(e => e.id === id);
-        let corrected = null;
-        if (exc) {
-          if (exc.rule_id === 'POL-BAL-001' && exc.current_value) corrected = Math.abs(parseFloat(exc.current_value) || 0);
-          else if (exc.rule_id === 'POL-RATE-001' && exc.current_value) {
-            const val = parseFloat(exc.current_value) || 0;
-            corrected = val > 25 ? (val / 10).toFixed(2) : Math.abs(val).toFixed(2);
-          } else if (exc.rule_id === 'POL-STATE-001' && exc.current_value) {
-            corrected = exc.current_value.toUpperCase().slice(0, 2);
-          }
-        }
+    try {
+      const token = localStorage.getItem('hive_token');
+      const res = await fetch('/api/exceptions/batch-resolve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          exception_ids: ids,
+          action: action === 'approve' ? 'resolve' : 'reject',
+          note: `Bulk ${action} executed via Exception Reviewer workbench`
+        })
+      });
 
-        await fetch(`/api/exceptions/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action, 
-            note: `Bulk ${action} via HITL workbench`, 
-            corrected_value: corrected 
-          })
-        });
-        resolvedCount++;
-      } catch (err) {
-        console.error("Bulk resolve error:", err);
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Batch Operation Completed", `Successfully resolved ${data.count} exceptions in batch.`);
+        setSelectedIds(new Set());
+        fetchExceptions();
+      } else {
+        toast.error("Batch Failed", data.error || 'Failed to process batch');
       }
+    } catch (err) {
+      console.error("Bulk resolve error:", err);
+      toast.error("Batch Error", err.message);
+    } finally {
+      setBulkBusy(false);
     }
-
-    setBulkBusy(false);
-    setSelectedIds(new Set());
-    fetchExceptions();
-    toast.success("Bulk Operation Completed", `Successfully processed ${resolvedCount} exceptions.`);
   };
 
   if (loading) {
@@ -275,6 +298,15 @@ export default function ExceptionQueue() {
               ))}
             </select>
           )}
+
+          <button
+            onClick={fetchBatchAiSummary}
+            className="btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1.5 bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+            title="Generate AI Cluster Diagnostics Summary"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden sm:inline">AI Summary</span>
+          </button>
         </div>
 
         {/* Exceptions Table Card */}
@@ -434,6 +466,93 @@ export default function ExceptionQueue() {
         )}
       </AnimatePresence>
 
+      {/* AI Batch Diagnostics Modal */}
+      <AnimatePresence>
+        {showBatchAiModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 relative overflow-hidden"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">AI Cluster Diagnostics Summary</h3>
+                    <p className="text-xs text-slate-500">Portfolio-wide exception analysis & remediation recommendations</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowBatchAiModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="py-4 space-y-4">
+                {batchAiLoading ? (
+                  <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 text-sm">
+                    <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+                    <span>Synthesizing exception clusters...</span>
+                  </div>
+                ) : batchAiData ? (
+                  <>
+                    <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950 leading-relaxed">
+                      <div className="font-semibold text-indigo-900 mb-1 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                        Executive Copilot Briefing
+                      </div>
+                      {batchAiData.ai_summary}
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Cluster Breakdown</h4>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {batchAiData.cluster_breakdown?.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-slate-800">{item.rule_id}</span>
+                              <span className="text-slate-600">({item.rule_name})</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <SeverityBadge severity={item.severity} />
+                              <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                                {item.count} loans
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+                      <span className="font-semibold text-slate-800">Suggested Action: </span>
+                      {batchAiData.suggested_batch_action}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-500">No batch diagnostics data available.</p>
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  onClick={() => setShowBatchAiModal(false)}
+                  className="btn-secondary text-xs py-1.5 px-4"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
@@ -485,11 +604,16 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   // Fetch AI review & full loan details
   useEffect(() => {
     setLoadingAi(true);
+    const token = localStorage.getItem('hive_token');
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
     
     // AI Review
     fetch('/api/ai-review', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ exception_id: exc.id })
     })
       .then(r => r.json())
@@ -505,7 +629,9 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
       .catch(() => setLoadingAi(false));
 
     // Loan Detail for Context
-    fetch(`/api/loans/${exc.loan_id}`)
+    fetch(`/api/loans/${exc.loan_id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
       .then(r => r.json())
       .then(d => {
         if (d.success) setLoanData(d.data);
@@ -516,9 +642,13 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const resolveAction = async (action) => {
     setBusy(true);
     try {
+      const token = localStorage.getItem('hive_token');
       const res = await fetch(`/api/exceptions/${exc.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ 
           action, 
           note: note || 'Resolved via Copilot interface', 

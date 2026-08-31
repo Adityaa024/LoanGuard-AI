@@ -47,6 +47,21 @@ export async function getDb() {
       maturity_date TEXT,
       loan_status TEXT,
       property_type TEXT,
+      borrower_id TEXT,
+      original_principal REAL,
+      current_balance REAL,
+      term_months INTEGER,
+      loan_purpose TEXT,
+      payment_status TEXT,
+      days_past_due INTEGER,
+      document_status TEXT,
+      last_updated_at TEXT,
+      source_system TEXT,
+      verified_by TEXT,
+      reviewer_decision TEXT,
+      ai_recommendation TEXT,
+      ai_suggested_value TEXT,
+      ai_confidence REAL,
       validation_status TEXT DEFAULT 'pending',
       is_verified BOOLEAN DEFAULT 0,
       verified_at DATETIME,
@@ -91,6 +106,36 @@ export async function getDb() {
       details TEXT
     );
   `)
+
+  // Run schema column migrations for existing SQLite databases
+  const columns = await dbInstance.all(`PRAGMA table_info(loans)`)
+  const colNames = new Set(columns.map(c => c.name))
+  const newCols = [
+    ['borrower_id', 'TEXT'],
+    ['original_principal', 'REAL'],
+    ['current_balance', 'REAL'],
+    ['term_months', 'INTEGER'],
+    ['loan_purpose', 'TEXT'],
+    ['payment_status', 'TEXT'],
+    ['days_past_due', 'INTEGER'],
+    ['document_status', 'TEXT'],
+    ['last_updated_at', 'TEXT'],
+    ['source_system', 'TEXT'],
+    ['verified_by', 'TEXT'],
+    ['reviewer_decision', 'TEXT'],
+    ['ai_recommendation', 'TEXT'],
+    ['ai_suggested_value', 'TEXT'],
+    ['ai_confidence', 'REAL']
+  ]
+  for (const [col, type] of newCols) {
+    if (!colNames.has(col)) {
+      try {
+        await dbInstance.run(`ALTER TABLE loans ADD COLUMN ${col} ${type}`)
+      } catch (err) {
+        // column may already exist
+      }
+    }
+  }
 
   return dbInstance
 }

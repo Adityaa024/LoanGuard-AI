@@ -58,3 +58,53 @@ rules:
     description: >
       Duplicate Loan IDs are strictly forbidden (DENY). The entire record ingestion fails.
     onViolation: deny
+
+  balance_exceeds_principal:
+    id: POL-BALCAP-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: Current balance should not exceed original principal.
+    onViolation: escalate
+
+  payment_status_mismatch:
+    id: POL-PAYST-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: If payment status is current, days past due must be 0.
+    onViolation: escalate
+
+  closed_loan_balance:
+    id: POL-CLOSED-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: Closed loans should not have a positive balance.
+    onViolation: escalate
+
+  missing_document_status:
+    id: POL-DOC-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: Required document status is missing.
+    onViolation: escalate
+
+  stale_record:
+    id: POL-STALE-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: Record is older than 90 days.
+    onViolation: escalate
+
+  duplicate_borrower_combo:
+    id: POL-BORCMB-001
+    appliesTo: [ingest_loan_record]
+    appealable: true
+    description: Suspicious duplicate borrower with same loan amount and origination date.
+    onViolation: escalate
+
+  cross_source_conflict:
+    id: POL-CONFLICT-001
+    appliesTo: [ingest_loan_record, update_loan_record]
+    appealable: true
+    description: Conflicting values between originator baseline tape and secondary servicer update.
+    onViolation: escalate
+

@@ -36,7 +36,7 @@ const USER_PROFILES = {
   reviewer: {
     name: 'Rajesh Menon',
     role: 'Exception Reviewer',
-    email: 'rajesh.menon@LoanGuard-AI.io',
+    email: 'rajesh.menon@loanguard.ai',
     avatar: 'RM',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
     permissions: 'AI Copilot Review, HITL Override & Decision'
@@ -44,7 +44,7 @@ const USER_PROFILES = {
   consumer: {
     name: 'Ananya Iyer',
     role: 'Data Consumer',
-    email: 'ananya.iyer@LoanGuard-AI.io',
+    email: 'ananya.iyer@loanguard.ai',
     avatar: 'AI',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     permissions: 'Verified Export, Audit Trail & API Access'
@@ -142,6 +142,39 @@ export default function App() {
     }
   ]
 
+  const switchPersona = async (email) => {
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: 'password123' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('hive_token', data.token);
+        setUser(data.user);
+        if (data.user.role === 'operator') setActiveTab('operator');
+        if (data.user.role === 'reviewer') setActiveTab('reviewer');
+        if (data.user.role === 'consumer') setActiveTab('consumer');
+        setShowUserMenu(false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleTabClick = async (tabId) => {
+    if (tabId === 'operator' && user?.role !== 'operator') {
+      await switchPersona('aditya.raj@gmail.com');
+    } else if (tabId === 'reviewer' && user?.role !== 'reviewer') {
+      await switchPersona('rajesh.menon@loanguard.ai');
+    } else if (tabId === 'consumer' && user?.role !== 'consumer') {
+      await switchPersona('ananya.iyer@loanguard.ai');
+    } else {
+      setActiveTab(tabId);
+    }
+  };
+
   if (!isAuthenticated) {
     return <LoginView onLoginSuccess={handleLoginSuccess} />
   }
@@ -169,75 +202,48 @@ export default function App() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto py-2">
-            
-            {user?.role === 'operator' && (
+        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto py-3">
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
               <button
-                onClick={() => setActiveTab('operator')}
-                className={`w-full group flex items-center justify-between p-3 rounded-xl text-left transition-all duration-200 ${
-                  activeTab === 'operator'
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                className={`w-full group flex items-center justify-between p-3 rounded-xl text-left transition-all duration-200 cursor-pointer ${
+                  isActive
                     ? 'bg-indigo-50 border border-indigo-100 shadow-sm'
                     : 'hover:bg-slate-50 border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'operator' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80'}`}>
-                    <Database className="w-4 h-4" />
+                  <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80'}`}>
+                    <Icon className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs tracking-tight">Data Operator</div>
-                    <div className="text-[10px] text-slate-400 font-normal truncate">Ingestion & Validation</div>
+                    <div className="text-xs font-semibold tracking-tight text-slate-900">{tab.label}</div>
+                    <div className="text-[10px] text-slate-400 font-normal truncate">{tab.desc}</div>
                   </div>
                 </div>
-              </button>
-            )}
 
-            {user?.role === 'reviewer' && (
-              <button
-                onClick={() => setActiveTab('reviewer')}
-                className={`w-full group flex items-center justify-between p-3 rounded-xl text-left transition-all duration-200 ${
-                  activeTab === 'reviewer'
-                    ? 'bg-indigo-50 border border-indigo-100 shadow-sm'
-                    : 'hover:bg-slate-50 border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'reviewer' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80'}`}>
-                    <ShieldAlert className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs tracking-tight">Exception Queue</div>
-                    <div className="text-[10px] text-slate-400 font-normal truncate">Copilot Resolutions</div>
-                  </div>
-                </div>
-                {stats.open_exceptions > 0 && (
+                {tab.count && (
+                  <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                    {tab.count}
+                  </span>
+                )}
+                {tab.badge && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
-                    {stats.open_exceptions}
+                    {tab.badge}
+                  </span>
+                )}
+                {tab.pill && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500 text-white animate-pulse">
+                    {tab.pill}
                   </span>
                 )}
               </button>
-            )}
-
-            {user?.role === 'consumer' && (
-              <button
-                onClick={() => setActiveTab('consumer')}
-                className={`w-full group flex items-center justify-between p-3 rounded-xl text-left transition-all duration-200 ${
-                  activeTab === 'consumer'
-                    ? 'bg-indigo-50 border border-indigo-100 shadow-sm'
-                    : 'hover:bg-slate-50 border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'consumer' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80'}`}>
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs tracking-tight">Data Consumer</div>
-                    <div className="text-[10px] text-slate-400 font-normal truncate">Verified Portfolios</div>
-                  </div>
-                </div>
-              </button>
-            )}
+            );
+          })}
         </nav>
         
         {/* Policy Engine Status Footer */}
@@ -309,22 +315,65 @@ export default function App() {
             </div>
 
             {/* Active User Switcher Pill & Sign Out */}
-            <div className="flex items-center gap-4 pl-2 border-l border-slate-200">
-              <div className="flex items-center gap-2">
+            <div className="relative flex items-center gap-3 pl-2 border-l border-slate-200">
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 text-left hover:bg-slate-100/70 p-1.5 rounded-xl transition-colors cursor-pointer"
+                title="Switch Demo Persona"
+              >
                 <div className="text-right hidden md:block">
                   <div className="text-xs font-bold text-slate-800 leading-tight">{user.name}</div>
-                  <div className="text-[10px] text-indigo-600 font-medium">{user.role}</div>
+                  <div className="text-[10px] text-indigo-600 font-medium capitalize">{user.role} (Switch ▾)</div>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold ring-2 ring-indigo-50">
                   {user.avatar}
                 </div>
-              </div>
-              <button 
-                onClick={handleSignOut}
-                className="text-xs font-medium text-slate-500 hover:text-red-600 transition-colors"
-              >
-                Sign Out
               </button>
+
+              {showUserMenu && (
+                <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Switch Active Persona
+                  </div>
+                  <button
+                    onClick={() => switchPersona('aditya.raj@gmail.com')}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${user.email === 'aditya.raj@gmail.com' ? 'bg-indigo-50/60 font-semibold text-indigo-900' : 'text-slate-700'}`}
+                  >
+                    <div>
+                      <div className="font-bold">Aditya Raj</div>
+                      <div className="text-[10px] text-slate-400">Data Operator</div>
+                    </div>
+                    {user.email === 'aditya.raj@gmail.com' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                  </button>
+                  <button
+                    onClick={() => switchPersona('rajesh.menon@loanguard.ai')}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${user.email === 'rajesh.menon@loanguard.ai' ? 'bg-indigo-50/60 font-semibold text-indigo-900' : 'text-slate-700'}`}
+                  >
+                    <div>
+                      <div className="font-bold">Rajesh Menon</div>
+                      <div className="text-[10px] text-slate-400">Exception Reviewer</div>
+                    </div>
+                    {user.email === 'rajesh.menon@loanguard.ai' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                  </button>
+                  <button
+                    onClick={() => switchPersona('ananya.iyer@loanguard.ai')}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${user.email === 'ananya.iyer@loanguard.ai' ? 'bg-indigo-50/60 font-semibold text-indigo-900' : 'text-slate-700'}`}
+                  >
+                    <div>
+                      <div className="font-bold">Ananya Iyer</div>
+                      <div className="text-[10px] text-slate-400">Data Consumer</div>
+                    </div>
+                    {user.email === 'ananya.iyer@loanguard.ai' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                  </button>
+                  <div className="border-t border-slate-100 my-1"></div>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 font-medium transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

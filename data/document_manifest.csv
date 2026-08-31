@@ -1,0 +1,5 @@
+loan_id,document_type,document_status,uploaded_at
+LN-CLN01_qty2,Promissory Note,Available,2024-01-15T10:00:00Z
+LN-CLN02_qty2,Mortgage Deed,Available,2024-02-20T11:30:00Z
+LN-CLN04_qty2,Title Insurance,Missing,
+LN-CLN03_qty2,Appraisal Report,Available,2024-03-10T14:45:00Z

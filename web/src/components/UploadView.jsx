@@ -36,9 +36,11 @@ export default function OperatorView() {
 
   const fetchData = useCallback(async () => {
     try {
+      const token = localStorage.getItem('hive_token');
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
       const [sumRes, histRes] = await Promise.all([
-        fetch('/api/summary').then(r => r.json()),
-        fetch('/api/uploads').then(r => r.json())
+        fetch('/api/summary', { headers: authHeaders }).then(r => r.json()),
+        fetch('/api/uploads', { headers: authHeaders }).then(r => r.json())
       ]);
       if (sumRes.success) setSummary(sumRes.data);
       if (histRes.success) setHistory(histRes.data);
@@ -59,7 +61,15 @@ export default function OperatorView() {
     formData.append('file', targetFile);
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const token = localStorage.getItem('hive_token');
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('/api/upload', { 
+        method: 'POST', 
+        headers,
+        body: formData 
+      });
       const data = await res.json();
       if (data.success) {
         setResult(data);

@@ -9,6 +9,23 @@ import { LoanSchema } from './schema.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const POLICY_DIR = path.resolve(__dirname, '..', '..', 'policies')
 
+export const WEEKDAY_NUM = {
+  sunday: 7,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+  domingo: 7,
+  lunes: 1,
+  martes: 2,
+  miercoles: 3,
+  jueves: 4,
+  viernes: 5,
+  sabado: 6
+}
+
 export class LocalPolicyEngine {
   constructor({ policyDir = POLICY_DIR } = {}) {
     this.policyDir = policyDir
@@ -172,6 +189,95 @@ export class LocalPolicyEngine {
     return null
   }
 
+  checkStaleRecord(action, ctx) {
+    const r = this.rules.stale_record
+    if (!r?.appliesTo.includes(action.type)) return null
+    if (!action.record || !action.record.last_updated_at) return null
+    
+    const lastUpdate = new Date(action.record.last_updated_at)
+    const ageDays = (ctx.now - lastUpdate) / (1000 * 60 * 60 * 24)
+    if (ageDays > 90) {
+      return {
+        outcome: DECISION.ESCALATE,
+        escalated: true,
+        policyId: r.id,
+        rule: 'stale_record',
+        reason: `Record is stale. Last updated ${Math.round(ageDays)} days ago.`,
+        category: 'exception',
+        field: 'last_updated_at',
+        severity: 'low'
+      }
+    }
+    return null
+  }
+
+  checkDuplicateBorrowerCombo(action, ctx) {
+    const r = this.rules.duplicate_borrower_combo
+    if (!r?.appliesTo.includes(action.type)) return null
+    if (!action.record || !action.record.borrower_name || !action.record.principal_balance || !action.record.origination_date) return null
+    
+    // Construct a composite key: Name_Amount_Date
+    const comboKey = `${action.record.borrower_name}_${action.record.principal_balance}_${action.record.origination_date}`
+    if (ctx.borrowerCombos && ctx.borrowerCombos.has(comboKey)) {
+      return {
+        outcome: DECISION.ESCALATE,
+        escalated: true,
+        policyId: r.id,
+        rule: 'duplicate_borrower_combo',
+        reason: `Suspicious duplicate borrower combo detected for: ${action.record.borrower_name}`,
+        category: 'exception',
+        field: 'borrower_name',
+        severity: 'medium'
+      }
+    }
+    
+    if (ctx.borrowerCombos) {
+      ctx.borrowerCombos.add(comboKey)
+    }
+    
+    return null
+  }
+
+  checkCrossSourceConflict(action, ctx) {
+    const r = this.rules.cross_source_conflict
+    if (!r?.appliesTo.includes(action.type)) return null
+    if (!action.record || !ctx.existingLoanMap) return null
+    
+    const existing = ctx.existingLoanMap.get(action.record.loan_id)
+    if (!existing) return null
+
+    // Check for discrepancies between existing record and incoming secondary update
+    if (action.record.source_system && action.record.source_system !== existing.source_system) {
+      if (action.record.current_balance !== undefined && existing.current_balance !== undefined) {
+        if (Math.abs(Number(action.record.current_balance) - Number(existing.current_balance)) > 0.01) {
+          return {
+            outcome: DECISION.ESCALATE,
+            escalated: true,
+            policyId: r.id,
+            rule: 'cross_source_conflict',
+            reason: `Conflicting current balance between ${existing.source_system || 'Baseline'} ($${existing.current_balance}) and ${action.record.source_system} ($${action.record.current_balance})`,
+            category: 'exception',
+            field: 'current_balance',
+            severity: 'high'
+          }
+        }
+      }
+      if (action.record.payment_status && existing.payment_status && action.record.payment_status.toLowerCase() !== existing.payment_status.toLowerCase()) {
+        return {
+          outcome: DECISION.ESCALATE,
+          escalated: true,
+          policyId: r.id,
+          rule: 'cross_source_conflict',
+          reason: `Conflicting payment status: ${existing.source_system || 'Baseline'} reports "${existing.payment_status}" vs ${action.record.source_system} reports "${action.record.payment_status}"`,
+          category: 'exception',
+          field: 'payment_status',
+          severity: 'high'
+        }
+      }
+    }
+    return null
+  }
+
   // ---- Evaluate ----
   evaluate(action, ctx = {}) {
     const now = ctx.now instanceof Date ? ctx.now : new Date()
@@ -179,16 +285,57 @@ export class LocalPolicyEngine {
 
     const checks = []
     
-    // 1. Cross-row/DB Duplicate check
+    // Evaluate Authored Rules FIRST (from natural-language compilation)
+    for (const rule of this.authoredRules) {
+      if (!rule.appliesTo.includes(action.type)) continue
+      
+      let violation = false
+      if (rule.kind === 'contact_day') {
+        const day = now.getUTCDay() || 7 // 1=Mon, 7=Sun
+        if (rule.params.blockedWeekdays.includes(day)) violation = true
+      }
+      else if (rule.kind === 'amount_cap') {
+        if (action.amount > rule.params.maxAmount) violation = true
+      }
+      else if (rule.kind === 'banned_phrase') {
+        const txt = (action.text || '').toLowerCase()
+        if (rule.params.phrases.some(p => txt.includes(p.toLowerCase()))) violation = true
+      }
+      else if (rule.kind === 'contact_hours') {
+        const hr = now.getUTCHours()
+        if (hr < rule.params.startHour || hr >= rule.params.endHour) violation = true
+      }
+
+      if (violation) {
+        checks.push({
+          outcome: rule.onViolation === 'deny' ? DECISION.DENY : DECISION.ESCALATE,
+          escalated: rule.onViolation.includes('escalate'),
+          policyId: rule.id,
+          rule: rule.kind,
+          reason: rule.description,
+          category: 'authored'
+        })
+      }
+    }
+    
     const dupCheck = this.checkDuplicateLoan(action, context)
     if (dupCheck) checks.push(dupCheck)
+    
+    const staleCheck = this.checkStaleRecord(action, context)
+    if (staleCheck) checks.push(staleCheck)
+    
+    const comboCheck = this.checkDuplicateBorrowerCombo(action, context)
+    if (comboCheck) checks.push(comboCheck)
+
+    const conflictCheck = this.checkCrossSourceConflict(action, context)
+    if (conflictCheck) checks.push(conflictCheck)
 
     // 2. Zod Schema Validation
     if (action.record && ['ingest_loan_record', 'update_loan_record'].includes(action.type)) {
       const result = LoanSchema.safeParse(action.record)
       if (!result.success) {
-        // Map Zod errors to policy violations
-        result.error.errors.forEach(err => {
+        const zodErrors = result.error?.issues || result.error?.errors || []
+        zodErrors.forEach(err => {
           let rule = 'validation_error'
           let policyId = 'POL-GEN-001'
           let severity = 'high'
@@ -213,6 +360,28 @@ export class LocalPolicyEngine {
           } else if (err.path.includes('property_state')) {
             policyId = this.rules.invalid_state?.id || 'POL-STATE-001'
             rule = 'invalid_state'
+            severity = 'low'
+          } else if (err.path.includes('current_balance')) {
+            if (err.message.includes('original principal')) {
+              policyId = this.rules.balance_exceeds_principal?.id || 'POL-BALCAP-001'
+              rule = 'balance_exceeds_principal'
+              severity = 'high'
+            } else if (err.message.includes('closed')) {
+              policyId = this.rules.closed_loan_balance?.id || 'POL-CLOSED-001'
+              rule = 'closed_loan_balance'
+              severity = 'high'
+            } else {
+              policyId = 'POL-BAL-002'
+              rule = 'invalid_current_balance'
+              severity = 'high'
+            }
+          } else if (err.path.includes('payment_status')) {
+            policyId = this.rules.payment_status_mismatch?.id || 'POL-PAYST-001'
+            rule = 'payment_status_mismatch'
+            severity = 'medium'
+          } else if (err.path.includes('document_status')) {
+            policyId = this.rules.missing_document_status?.id || 'POL-DOC-001'
+            rule = 'missing_document_status'
             severity = 'low'
           }
 

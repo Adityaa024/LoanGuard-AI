@@ -519,14 +519,18 @@ function AuditTrailModal({ loan, onClose }) {
   const [verifiedMath, setVerifiedMath] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/audit/loan/${loan.id}`)
+    const token = localStorage.getItem('hive_token');
+    const targetLoanId = loan.id || loan.loan_id;
+    fetch(`/api/audit/loan/${targetLoanId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
       .then(r => r.json())
       .then(d => {
         if (d.success) setTrail(d.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [loan.id]);
+  }, [loan.id, loan.loan_id]);
 
   const verifyChainMath = () => {
     setVerifiedMath(true);

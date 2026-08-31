@@ -1,0 +1,13 @@
+loan_id,exception_type,expected_severity,description
+MISSING-1234,missing_borrower,high,Borrower name is empty
+DUP-001,duplicate_loan,critical,Duplicate Loan ID detected
+BAL-001,negative_balance,critical,Principal balance is negative
+RATE-001,invalid_interest_rate,high,Interest rate > 25%
+DATE-001,invalid_dates,medium,Maturity date is not after origination date
+STATE-001,invalid_state,low,Property state must be 2 uppercase letters
+BALCAP-001,balance_exceeds_principal,high,Current balance should not exceed original principal
+PAYST-001,payment_status_mismatch,medium,Payment status is current but days past due > 0
+CLOSED-001,closed_loan_balance,high,Closed loans should not have a positive balance
+DOC-001,missing_document_status,low,Required document status is missing
+STALE-001,stale_record,low,Record is older than 90 days
+BORCMB-001,duplicate_borrower_combo,medium,Suspicious duplicate borrower with same loan amount and origination date
