@@ -1,0 +1,19 @@
+loan_id,borrower_name,property_state,principal_balance,original_principal,current_balance,interest_rate,origination_date,maturity_date,term_months,loan_purpose,payment_status,days_past_due,document_status,loan_status,last_updated_at,source_system
+,Alice MissingID,CA,250000,250000,240000,4.50,2023-01-15,2053-01-15,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_DUP_001,Bob DuplicateOne,NY,300000,300000,290000,5.25,2022-05-10,2052-05-10,360,Refinance,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_DUP_001,Bob DuplicateTwo,NY,300000,300000,290000,5.25,2022-05-10,2052-05-10,360,Refinance,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_COMBO_001,Charlie Repeat,TX,180000,180000,175000,6.00,2023-06-01,2053-06-01,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_COMBO_002,Charlie Repeat,TX,180000,180000,175000,6.00,2023-06-01,2053-06-01,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_DATE_INV,David BadDate,FL,220000,220000,215000,4.75,invalid-date,2053-01-15,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_DATE_REV,Eve ReverseDate,WA,400000,400000,390000,3.85,2025-01-01,2020-01-01,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_BAL_NEG,Frank NegPrincipal,IL,-150000,-150000,-140000,5.00,2023-02-10,2053-02-10,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_CURBAL_NEG,Grace NegCurrentBal,PA,200000,200000,-5000,4.25,2023-03-12,2053-03-12,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_BALCAP,Harry OverBalance,OH,100000,100000,150000,6.50,2023-04-15,2053-04-15,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_RATE_HIGH,Iris HighRate,NJ,320000,320000,310000,42.50,2023-05-20,2053-05-20,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_RATE_NEG,Jack NegRate,GA,280000,280000,275000,-3.50,2023-05-20,2053-05-20,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_PAYST,Kelly DpdMismatch,NC,350000,350000,340000,4.15,2023-07-01,2053-07-01,360,Purchase,Current,90,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_DOC,Leo MissingDoc,AZ,290000,290000,280000,5.10,2023-08-15,2053-08-15,360,Purchase,Current,0,,Active,2026-08-01,Origination_Tape
+LN_ADV_STALE,Mary StaleRecord,MI,210000,210000,205000,4.80,2021-01-01,2051-01-01,360,Purchase,Current,0,Available,Active,2024-01-01,Origination_Tape
+LN_ADV_STATE,Ned BadState,california,310000,310000,300000,4.50,2023-09-01,2053-09-01,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape
+LN_ADV_CLOSED,Olivia ClosedWithBal,VA,190000,190000,45000,5.75,2022-10-10,2052-10-10,360,Purchase,Current,0,Available,Closed,2026-08-01,Origination_Tape
+LN_ADV_BLANKBOR,,CO,260000,260000,250000,4.35,2023-11-12,2053-11-12,360,Purchase,Current,0,Available,Active,2026-08-01,Origination_Tape

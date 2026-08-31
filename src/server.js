@@ -50,6 +50,11 @@ try {
 }
 if (registerRoutes) await registerRoutes(app, { ROOT, meta })
 
+// API 404 Handler (Any /api/* route that was not matched above must return JSON 404, not HTML)
+app.all('/api/*', (_req, res) => {
+  res.status(404).json({ success: false, error: 'API endpoint not found' })
+})
+
 // ---- Static web app ----------------------------------------------------
 // Prefer the built Vite app; fall back to the placeholder in public/.
 const webDist = path.join(ROOT, 'web', 'dist')

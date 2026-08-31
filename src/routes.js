@@ -767,11 +767,15 @@ export async function registerRoutes(app, { ROOT }) {
       if (!exc) return res.status(404).json({ success: false, error: 'Exception not found' })
       if (exc.status !== 'open') return res.status(400).json({ success: false, error: 'Exception is already resolved' })
 
-      await db.run(`
+      const updateRes = await db.run(`
         UPDATE exceptions 
         SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, resolution_note = ?
-        WHERE id = ?
+        WHERE id = ? AND status = 'open'
       `, [req.user.name, sanitizedNote, req.params.id])
+
+      if (updateRes.changes === 0) {
+        return res.status(400).json({ success: false, error: 'Exception is already resolved or being modified concurrently' })
+      }
 
       // If resolving and a corrected value is provided, update the loan record
       if (action === 'resolve' && corrected_value !== undefined) {
