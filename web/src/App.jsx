@@ -14,7 +14,10 @@ import {
   Building2,
   ExternalLink,
   Zap,
-  Globe
+  Globe,
+  X,
+  Search,
+  Check
 } from 'lucide-react'
 import { useEventStream } from './api.js'
 import OperatorView from './components/UploadView.jsx'
@@ -39,7 +42,7 @@ const USER_PROFILES = {
     email: 'rajesh.menon@loanguard.ai',
     avatar: 'RM',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
-    permissions: 'AI Copilot Review, HITL Override & Decision'
+    permissions: 'Exception Queue, AI Review & Audit Sign-off'
   },
   consumer: {
     name: 'Ananya Iyer',
@@ -75,6 +78,7 @@ export default function App() {
     return 'operator';
   })
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showPolicyCatalog, setShowPolicyCatalog] = useState(false)
   const [sseConnected, setSseConnected] = useState(true)
   const [stats, setStats] = useState({ total_loans: 0, open_exceptions: 0, verified_loans: 0, data_quality_score: 100 })
   const hiveApi = useRef(null)
@@ -98,11 +102,16 @@ export default function App() {
     const handleSwitchTab = (e) => {
       if (e.detail) setActiveTab(e.detail);
     };
+    const handleOpenPolicies = () => {
+      setShowPolicyCatalog(true);
+    };
     window.addEventListener('switch_tab', handleSwitchTab);
+    window.addEventListener('open_policy_catalog', handleOpenPolicies);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('switch_tab', handleSwitchTab);
+      window.removeEventListener('open_policy_catalog', handleOpenPolicies);
     };
   }, [fetchSummary, isAuthenticated])
 
@@ -268,15 +277,21 @@ export default function App() {
         
         {/* Policy Engine Status Footer */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/60 space-y-2.5">
-          <div className="flex items-center justify-between text-xs">
+          <button 
+            onClick={() => setShowPolicyCatalog(true)}
+            className="w-full flex items-center justify-between text-xs p-2 rounded-xl bg-white border border-slate-200/80 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer shadow-2xs group text-left"
+            title="Click to view all 12 active validation policy rules"
+          >
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[11px] font-medium text-slate-600">Policy Engine Active</span>
+              <span className="text-[11px] font-semibold text-slate-700 group-hover:text-indigo-900">Policy Engine Active</span>
             </div>
-            <span className="text-[10px] font-mono text-slate-400">12 POLICIES</span>
-          </div>
+            <span className="text-[10px] font-bold font-mono text-indigo-700 bg-indigo-50 group-hover:bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200">
+              12 POLICIES ↗
+            </span>
+          </button>
 
           <div className="grid grid-cols-2 gap-2 pt-1">
             <a 
@@ -459,6 +474,146 @@ export default function App() {
 
       </main>
       
+      {/* Global Policy Engine Catalog Modal */}
+      {showPolicyCatalog && (
+        <PolicyCatalogModal onClose={() => setShowPolicyCatalog(false)} />
+      )}
+
     </div>
   )
+}
+
+function PolicyCatalogModal({ onClose }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('ALL');
+
+  const POLICIES = [
+    { id: 'POL-BAL-001', name: 'Positive Balance Invariant', severity: 'CRITICAL', field: 'principal_balance', desc: 'Validates that principal balance is strictly positive (non-negative, non-zero).' },
+    { id: 'POL-RATE-001', name: 'Interest Rate Corridor', severity: 'HIGH', field: 'interest_rate', desc: 'Verifies interest rates fall within the compliant corridor (0.5% to 25.0%). Negative rates trigger Critical escalation.' },
+    { id: 'POL-BOR-001', name: 'Borrower Name Non-Null', severity: 'HIGH', field: 'borrower_name', desc: 'Ensures obligor identity is specified and not blank or unassigned.' },
+    { id: 'POL-DATE-001', name: 'Chronological Sanity Check', severity: 'CRITICAL', field: 'maturity_date', desc: 'Enforces that maturity_date must strictly succeed origination_date.' },
+    { id: 'POL-STATE-001', name: 'State Code ISO Standardization', severity: 'LOW', field: 'property_state', desc: 'Validates 2-letter uppercase US state abbreviations (e.g. CA, WA, TX, NY).' },
+    { id: 'POL-DUP-001', name: 'Duplicate Loan ID Interceptor', severity: 'CRITICAL', field: 'loan_id', desc: 'Strictly forbids duplicate loan identifiers across active and historical portfolios.' },
+    { id: 'POL-BALCAP-001', name: 'Balance vs Principal Cap', severity: 'HIGH', field: 'current_balance', desc: 'Current unpaid balance should not exceed original disbursed principal.' },
+    { id: 'POL-PAYST-001', name: 'Payment Status Consistency', severity: 'MEDIUM', field: 'payment_status', desc: 'If payment status is marked Current, days past due (DPD) must strictly equal 0.' },
+    { id: 'POL-CLOSED-001', name: 'Closed Loan Balance Check', severity: 'HIGH', field: 'loan_status', desc: 'Loans marked as closed or paid off must not retain a positive unpaid balance.' },
+    { id: 'POL-DOC-001', name: 'Document Availability Manifest', severity: 'MEDIUM', field: 'document_status', desc: 'Validates promissory note and deed attachment in the document repository.' },
+    { id: 'POL-STALE-001', name: 'Stale Record Detector', severity: 'LOW', field: 'last_updated_at', desc: 'Flags records where tape update timestamp is older than 90 days.' },
+    { id: 'POL-BORCMB-001', name: 'Duplicate Obligor Combination', severity: 'HIGH', field: 'borrower_id', desc: 'Identifies suspicious duplicate borrower with same loan amount and origination date.' },
+    { id: 'POL-CONFLICT-001', name: 'Cross-Source Tape Conflict', severity: 'HIGH', field: 'source_system', desc: 'Detects data discrepancy between originator baseline tape and servicer monthly update.' },
+  ];
+
+  const filtered = POLICIES.filter(p => {
+    const matchesSearch = p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.field.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          p.desc.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSev = severityFilter === 'ALL' || p.severity === severityFilter;
+    return matchesSearch && matchesSev;
+  });
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4" 
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150" 
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-5 border-b border-slate-200/80 flex justify-between items-center bg-slate-50/80">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-200/60">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900">Intain Policy Verification Engine</h3>
+                <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-mono">
+                  {POLICIES.length} ACTIVE RULES
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Automated statutory loan tape compliance rules and severity levels</p>
+            </div>
+          </div>
+          <button 
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer" 
+            onClick={onClose}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="p-3.5 border-b border-slate-100 bg-white flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input 
+              type="text" 
+              placeholder="Search rule ID, field, name, or description..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-1">
+            {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => (
+              <button
+                key={sev}
+                onClick={() => setSeverityFilter(sev)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors cursor-pointer ${
+                  severityFilter === sev 
+                    ? 'bg-slate-900 text-white' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                }`}
+              >
+                {sev}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Rules Grid */}
+        <div className="p-5 flex-1 overflow-y-auto space-y-3 bg-slate-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filtered.map(p => (
+              <div key={p.id} className="p-3.5 rounded-xl border border-slate-200/80 bg-white shadow-2xs space-y-1.5 hover:border-indigo-200 transition-all">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-indigo-900 bg-indigo-50/70 px-2 py-0.5 rounded border border-indigo-100">
+                    {p.id}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    p.severity === 'CRITICAL' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                    p.severity === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    p.severity === 'MEDIUM' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    {p.severity}
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 pt-0.5">{p.name}</div>
+                <div className="text-[11px] text-slate-600 leading-relaxed">{p.desc}</div>
+                <div className="text-[10px] font-mono text-slate-500 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+                  <span>Target Field:</span>
+                  <span className="text-indigo-600 font-bold bg-slate-50 px-1.5 py-0.2 rounded border border-slate-200">{p.field}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-200 bg-white flex justify-between items-center">
+          <div className="text-xs text-slate-500 font-medium">
+            All rules execute deterministically at $O(1)$ in-memory before SQLite commit.
+          </div>
+          <button onClick={onClose} className="btn-primary text-xs py-1.5 px-4 cursor-pointer">
+            Close Catalog
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
