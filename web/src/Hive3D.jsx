@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
@@ -308,20 +308,121 @@ function Scene({ apiRef }) {
 }
 
 export default function Hive3D({ apiRef }) {
+  const [activeBeamsCount, setActiveBeamsCount] = useState(0);
+  const [pulseCount, setPulseCount] = useState(0);
+
+  const handleSimulateBatch = (type) => {
+    if (!apiRef?.current?.decision) return;
+    if (type === 'clean') {
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+          apiRef.current.decision({ actionType: 'ingest_loan_record', decision: 'allow' });
+        }, i * 120);
+      }
+    } else if (type === 'anomaly') {
+      if (apiRef.current.rogueSurge) apiRef.current.rogueSurge();
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          apiRef.current.decision({ actionType: 'ingest_loan_record', decision: i % 2 === 0 ? 'escalate' : 'deny' });
+        }, i * 150);
+      }
+    } else if (type === 'resolve') {
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          apiRef.current.decision({ actionType: 'exception_resolution', decision: 'allow' });
+        }, i * 140);
+      }
+    }
+  };
+
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-      <Canvas camera={{ position: [0, 12, 24], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
-        <Scene apiRef={apiRef} />
-      </Canvas>
-      <div style={{ position: 'absolute', bottom: 20, left: 20, color: '#fff', fontSize: 12, background: 'rgba(0,0,0,0.5)', padding: '4px 12px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
-        3D Loan Data Pipeline Visualization (React Three Fiber)
+    <div className="w-full h-full relative overflow-hidden bg-slate-950 flex flex-col">
+      {/* 3D Canvas */}
+      <div className="flex-1 w-full h-full relative min-h-[500px]">
+        <Canvas 
+          camera={{ position: [0, 14, 26], fov: 45 }} 
+          dpr={[1, 2]} 
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
+        >
+          <Scene apiRef={apiRef} />
+        </Canvas>
       </div>
-      <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11, background: 'rgba(0,0,0,0.6)', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 8, height: 8, background: '#3b82f6', borderRadius: '50%' }}></span> Ingestion</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 8, height: 8, background: '#8b5cf6', borderRadius: '50%' }}></span> Warden Core</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 8, height: 8, background: '#10b981', borderRadius: '50%' }}></span> Verified Storage</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 8, height: 8, background: '#f59e0b', borderRadius: '50%' }}></span> Exception Queue</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 8, height: 8, background: '#ec4899', borderRadius: '50%' }}></span> Human Reviewer</div>
+
+      {/* Top Left Interactive Control Panel */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2 bg-slate-900/85 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700/60 shadow-xl max-w-xs">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-800 text-xs font-bold text-white">
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>Live Swarm Telemetry</span>
+        </div>
+
+        <div className="text-[11px] text-slate-300 leading-relaxed">
+          Interactive WebGL pipeline simulator. Click to inject simulated loan events:
+        </div>
+
+        <div className="grid grid-cols-1 gap-1.5 pt-1">
+          <button
+            onClick={() => handleSimulateBatch('clean')}
+            className="text-[11px] font-semibold py-1.5 px-3 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 transition-all flex items-center justify-between cursor-pointer"
+          >
+            <span>+ Ingest Compliant Loans</span>
+            <span className="font-mono text-[9px] bg-emerald-950/80 px-1.5 py-0.5 rounded text-emerald-400">ALLOW</span>
+          </button>
+
+          <button
+            onClick={() => handleSimulateBatch('anomaly')}
+            className="text-[11px] font-semibold py-1.5 px-3 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 transition-all flex items-center justify-between cursor-pointer"
+          >
+            <span>+ Inject Critical Anomalies</span>
+            <span className="font-mono text-[9px] bg-rose-950/80 px-1.5 py-0.5 rounded text-rose-400">SURGE</span>
+          </button>
+
+          <button
+            onClick={() => handleSimulateBatch('resolve')}
+            className="text-[11px] font-semibold py-1.5 px-3 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 transition-all flex items-center justify-between cursor-pointer"
+          >
+            <span>+ AI HITL Resolution Wave</span>
+            <span className="font-mono text-[9px] bg-purple-950/80 px-1.5 py-0.5 rounded text-purple-400">RESOLVE</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Top Right Node Color Legend */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 text-[11px] bg-slate-900/85 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700/60 shadow-xl text-slate-200">
+        <div className="font-bold text-white text-xs pb-1.5 border-b border-slate-800">
+          Pipeline Topography
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-400/30"></span>
+          <span>Ingestion Gateway</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-purple-500 ring-2 ring-purple-400/30"></span>
+          <span>Warden Policy Core (12 Rules)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-400/30"></span>
+          <span>Verified Storage (SHA-256)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-400/30"></span>
+          <span>Exception Quarantine Pool</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-pink-500 ring-2 ring-pink-400/30"></span>
+          <span>Reviewer Copilot Station</span>
+        </div>
+      </div>
+
+      {/* Bottom Floating Navigation Hint */}
+      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-3 text-xs bg-slate-900/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-slate-400">
+        <span className="text-slate-300 font-semibold">Controls:</span>
+        <span>Left Click + Drag: Rotate 360°</span>
+        <span className="text-slate-700">•</span>
+        <span>Scroll: Zoom In/Out</span>
       </div>
     </div>
   )

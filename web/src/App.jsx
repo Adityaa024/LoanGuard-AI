@@ -452,23 +452,28 @@ export default function App() {
                   <VerifiedRecords />
                 </motion.div>
               )}
+              {activeTab === 'hive' && (
+                <motion.div 
+                  key="hive" 
+                  initial={{ opacity: 0, y: 4 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  exit={{ opacity: 0, y: -4 }} 
+                  transition={{ duration: 0.15 }} 
+                  className="h-full flex flex-col saas-card p-0 overflow-hidden bg-slate-950 min-h-[550px]"
+                >
+                  <Suspense fallback={
+                    <div className="flex h-full items-center justify-center bg-slate-950 text-indigo-400">
+                      <div className="flex items-center gap-3">
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        <span className="text-sm font-medium">Initializing 3D Swarm Pipeline Engine...</span>
+                      </div>
+                    </div>
+                  }>
+                    <Hive3D apiRef={hiveApi} />
+                  </Suspense>
+                </motion.div>
+              )}
             </AnimatePresence>
-            
-            {/* 3D Viz Container */}
-            <div className={`w-full h-full saas-card overflow-hidden ${activeTab === 'hive' ? 'flex flex-col' : 'hidden'}`}>
-              <Suspense fallback={
-                <div className="flex h-full items-center justify-center bg-slate-950 text-indigo-400">
-                  <div className="flex items-center gap-3">
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span className="text-sm font-medium">Initializing 3D Swarm Pipeline Engine...</span>
-                  </div>
-                </div>
-              }>
-                <div className="w-full h-full bg-slate-950 relative min-h-[500px]">
-                  <Hive3D apiRef={hiveApi} />
-                </div>
-              </Suspense>
-            </div>
           </div>
         </div>
 
