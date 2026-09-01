@@ -257,3 +257,66 @@ test('TEST-020: Cryptographic audit chain detects tampering or mutated events', 
   const verificationBefore = await audit.verify();
   assert.equal(verificationBefore.valid, true, 'Audit log chain must be valid');
 });
+
+test('TEST-021: Reviewer master-detail target assertion (mutation targets exact selected exception)', async () => {
+  const db = await getDb();
+  const loanA = 'ln_md_a_' + crypto.randomUUID().slice(0,8);
+  const loanB = 'ln_md_b_' + crypto.randomUUID().slice(0,8);
+  const excA = 'exc_md_a_' + crypto.randomUUID().slice(0,8);
+  const excB = 'exc_md_b_' + crypto.randomUUID().slice(0,8);
+
+  await db.run(`INSERT INTO loans (id, loan_id, validation_status) VALUES (?, ?, 'has_exceptions')`, [loanA, 'LN_MD_A']);
+  await db.run(`INSERT INTO loans (id, loan_id, validation_status) VALUES (?, ?, 'has_exceptions')`, [loanB, 'LN_MD_B']);
+  await db.run(`INSERT INTO exceptions (id, loan_id, rule_id, rule_name, field, severity, description, current_value, status) VALUES (?, ?, 'POL-REQ-001', 'req_field', 'borrower_name', 'critical', 'Missing', '', 'open')`, [excA, loanA]);
+  await db.run(`INSERT INTO exceptions (id, loan_id, rule_id, rule_name, field, severity, description, current_value, status) VALUES (?, ?, 'POL-BAL-001', 'positive_bal', 'principal_balance', 'critical', 'Negative', '-500', 'open')`, [excB, loanB]);
+
+  // Resolving exception B must NOT modify exception A or loan A
+  const updateB = await db.run(`UPDATE exceptions SET status = 'resolved', resolved_by = 'Rajesh Menon' WHERE id = ? AND status = 'open'`, [excB]);
+  assert.equal(updateB.changes, 1);
+
+  const checkA = await db.get(`SELECT status FROM exceptions WHERE id = ?`, [excA]);
+  const checkB = await db.get(`SELECT status FROM exceptions WHERE id = ?`, [excB]);
+  assert.equal(checkA.status, 'open', 'Unselected exception A must remain open');
+  assert.equal(checkB.status, 'resolved', 'Selected exception B must be resolved');
+
+  // Clean up
+  await db.run(`DELETE FROM exceptions WHERE id IN (?, ?)`, [excA, excB]);
+  await db.run(`DELETE FROM loans WHERE id IN (?, ?)`, [loanA, loanB]);
+});
+
+test('TEST-022: Approval on selected exception creates verified record with discrete loan ID in audit', async () => {
+  const db = await getDb();
+  const audit = new AuditLog();
+  const loanId = 'LN_VERIFY_MD_' + crypto.randomUUID().slice(0,6);
+  const dbLoanId = 'ln_v_' + crypto.randomUUID().slice(0,8);
+  const excId = 'exc_v_' + crypto.randomUUID().slice(0,8);
+
+  await db.run(`INSERT INTO loans (id, loan_id, borrower_name, principal_balance, interest_rate, origination_date, maturity_date, validation_status) VALUES (?, ?, 'Alice Walker', 300000, 4.5, '2021-01-01', '2051-01-01', 'has_exceptions')`, [dbLoanId, loanId]);
+  await db.run(`INSERT INTO exceptions (id, loan_id, rule_id, rule_name, field, severity, description, current_value, status) VALUES (?, ?, 'POL-DATE-001', 'date_order', 'maturity_date', 'high', 'Invalid date', '2019-01-01', 'open')`, [excId, dbLoanId]);
+
+  // Simulate human reviewer applying draft and approving
+  await db.run(`UPDATE exceptions SET status = 'resolved', resolved_by = 'Rajesh Menon', resolution_note = 'Accepted AI' WHERE id = ?`, [excId]);
+  await db.run(`UPDATE loans SET maturity_date = '2051-01-01', validation_status = 'verified', is_verified = 1, verified_by = 'Rajesh Menon' WHERE id = ?`, [dbLoanId]);
+
+  await audit.append({
+    agentId: 'human-reviewer',
+    actionType: 'exception_resolution',
+    loanId: dbLoanId,
+    policyId: 'POL-DATE-001',
+    rule: 'date_order',
+    decision: 'allow',
+    reason: 'Accepted AI',
+    authorizer: 'Rajesh Menon',
+    ts: new Date().toISOString()
+  });
+
+  const verifiedLoan = await db.get(`SELECT validation_status, is_verified, verified_by FROM loans WHERE id = ?`, [dbLoanId]);
+  assert.equal(verifiedLoan.validation_status, 'verified');
+  assert.equal(verifiedLoan.is_verified, 1);
+  assert.equal(verifiedLoan.verified_by, 'Rajesh Menon');
+
+  // Clean up
+  await db.run(`DELETE FROM exceptions WHERE id = ?`, [excId]);
+  await db.run(`DELETE FROM loans WHERE id = ?`, [dbLoanId]);
+});
+

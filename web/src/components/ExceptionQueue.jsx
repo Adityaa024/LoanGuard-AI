@@ -30,20 +30,29 @@ import {
   Building,
   CheckSquare,
   Square,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 import { useToast } from '../ToastContext.jsx';
 
 export default function ExceptionQueue() {
   const [exceptions, setExceptions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedExc, setSelectedExc] = useState(null);
+  
+  // Single Source of Truth for selection
+  const [selectedExceptionId, setSelectedExceptionId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('exception') || null;
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [ruleFilter, setRuleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('open'); // 'open', 'resolved', 'all'
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const toast = useToast();
 
   const fetchExceptions = useCallback(() => {
@@ -53,15 +62,6 @@ export default function ExceptionQueue() {
       .then(r => r.json())
       .then(d => {
         if (d && d.success && Array.isArray(d.data)) {
-          setSelectedExc(prev => {
-            if (prev) {
-              const stillOpen = d.data.find(e => e.id === prev.id);
-              return stillOpen || (d.data.length > 0 ? d.data[0] : null);
-            } else if (d.data.length > 0) {
-              return d.data[0];
-            }
-            return null;
-          });
           setExceptions(d.data);
         } else {
           setExceptions([]);
@@ -90,9 +90,6 @@ export default function ExceptionQueue() {
     return counts;
   }, [exceptions]);
 
-  const [page, setPage] = useState(1);
-  const pageSize = 25;
-
   const filteredExceptions = useMemo(() => {
     return exceptions.filter(exc => {
       const matchesSearch = 
@@ -106,6 +103,36 @@ export default function ExceptionQueue() {
     });
   }, [exceptions, searchTerm, severityFilter, ruleFilter]);
 
+  // Single Source of Truth: Derive selectedExc directly from filtered list or all list
+  const selectedExc = useMemo(() => {
+    if (!selectedExceptionId) {
+      return filteredExceptions.length > 0 ? filteredExceptions[0] : null;
+    }
+    const foundInFiltered = filteredExceptions.find(e => String(e.id) === String(selectedExceptionId) || e.loan_id === selectedExceptionId);
+    if (foundInFiltered) return foundInFiltered;
+    
+    // If not in filtered list, fallback to first in filtered list
+    return filteredExceptions.length > 0 ? filteredExceptions[0] : null;
+  }, [selectedExceptionId, filteredExceptions]);
+
+  // Synchronize selectedExceptionId when derived selection resolves
+  useEffect(() => {
+    if (selectedExc && String(selectedExc.id) !== String(selectedExceptionId)) {
+      setSelectedExceptionId(selectedExc.id);
+    } else if (!selectedExc && selectedExceptionId !== null && filteredExceptions.length === 0) {
+      setSelectedExceptionId(null);
+    }
+  }, [selectedExc, selectedExceptionId, filteredExceptions.length]);
+
+  // Update URL deep link state smoothly without reload
+  useEffect(() => {
+    if (selectedExc?.id) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('exception', selectedExc.id);
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [selectedExc?.id]);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
@@ -117,12 +144,17 @@ export default function ExceptionQueue() {
     return filteredExceptions.slice(start, start + pageSize);
   }, [filteredExceptions, page, pageSize]);
 
-  const currentIndex = selectedExc ? filteredExceptions.findIndex(e => e.id === selectedExc.id) : -1;
+  const currentIndex = selectedExc ? filteredExceptions.findIndex(e => String(e.id) === String(selectedExc.id)) : -1;
   
+  const handleSelectException = (exc) => {
+    if (!exc) return;
+    setSelectedExceptionId(exc.id);
+  };
+
   const handleNext = useCallback(() => {
     if (currentIndex < filteredExceptions.length - 1) {
       const nextExc = filteredExceptions[currentIndex + 1];
-      setSelectedExc(nextExc);
+      setSelectedExceptionId(nextExc.id);
       const targetPage = Math.floor((currentIndex + 1) / pageSize) + 1;
       if (targetPage !== page) setPage(targetPage);
     }
@@ -131,13 +163,13 @@ export default function ExceptionQueue() {
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
       const prevExc = filteredExceptions[currentIndex - 1];
-      setSelectedExc(prevExc);
+      setSelectedExceptionId(prevExc.id);
       const targetPage = Math.floor((currentIndex - 1) / pageSize) + 1;
       if (targetPage !== page) setPage(targetPage);
     }
   }, [currentIndex, filteredExceptions, page, pageSize]);
 
-  // Keyboard navigation
+  // Keyboard navigation (Up/Down or J/K)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -418,14 +450,16 @@ export default function ExceptionQueue() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {paginatedExceptions.map(exc => {
-                const isSelected = selectedExc && selectedExc.id === exc.id;
+                const isSelected = selectedExc && String(selectedExc.id) === String(exc.id);
                 const isChecked = selectedIds.has(exc.id);
                 return (
                   <tr
                     key={exc.id}
-                    onClick={() => setSelectedExc(exc)}
+                    onClick={() => handleSelectException(exc)}
                     className={`hover:bg-slate-50 transition-colors cursor-pointer group ${
-                      isSelected ? 'bg-emerald-50/60 font-medium' : ''
+                      isSelected 
+                        ? 'bg-emerald-50/90 font-medium border-l-4 border-l-emerald-600 shadow-2xs' 
+                        : 'border-l-4 border-l-transparent'
                     }`}
                   >
                     <td className="table-cell px-3 py-2.5" onClick={e => e.stopPropagation()}>
@@ -442,8 +476,9 @@ export default function ExceptionQueue() {
                     </td>
 
                     <td className="table-cell px-3 py-2.5">
-                      <div className="font-mono text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                        {exc.loan_id}
+                      <div className="font-mono text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
+                        <span>{exc.loan_id}</span>
+                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>}
                       </div>
                     </td>
 
@@ -512,10 +547,16 @@ export default function ExceptionQueue() {
             position={`${currentIndex + 1} of ${filteredExceptions.length}`}
           />
         ) : (
-          <div className="text-center p-8 space-y-2 text-slate-400">
-            <Sparkles className="w-8 h-8 mx-auto text-slate-300" />
-            <p className="text-sm font-semibold text-slate-600">Select an exception to inspect</p>
-            <p className="text-xs">AI Copilot will generate diagnostic insights and remediation options.</p>
+          <div className="text-center p-8 space-y-3 text-slate-400 max-w-sm">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+              <Sparkles className="w-6 h-6 text-slate-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">SELECT AN EXCEPTION</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Choose a record from the queue to inspect its validation failure and review recommendations.
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -651,6 +692,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const [aiReview, setAiReview] = useState(() => globalAiCache.get(exc.id) || null);
   const [loanData, setLoanData] = useState(null);
   const [loadingAi, setLoadingAi] = useState(() => !globalAiCache.has(exc.id));
+  const activeRequestRef = useRef(null);
   const toast = useToast();
   
   // Decoupled 3-state value model: human draft value is null until human action
@@ -662,19 +704,23 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const [activeSubTab, setActiveSubTab] = useState('ai'); // 'ai' or 'collateral'
   const [suggestionApplied, setSuggestionApplied] = useState(false);
 
-  // Fetch AI review & full loan details smoothly
+  // Fetch AI review & full loan details smoothly with race condition protection
   useEffect(() => {
+    activeRequestRef.current = exc.id;
     setSuggestionApplied(false);
     setDraftValue(null);
     setAppliedFromAi(false);
     setEditMode(false);
+    setNote('');
 
     if (globalAiCache.has(exc.id)) {
       const cached = globalAiCache.get(exc.id);
       setAiReview(cached);
       setLoadingAi(false);
     } else {
+      setAiReview(null);
       setLoadingAi(true);
+      const currentId = exc.id;
       const token = localStorage.getItem('loanguard_token');
       const authHeaders = {
         'Content-Type': 'application/json',
@@ -689,23 +735,31 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
       })
         .then(r => r.json())
         .then(d => {
-          if (d.success) {
+          if (activeRequestRef.current === currentId && d.success) {
             globalAiCache.set(exc.id, d.data);
             setAiReview(d.data);
           }
         })
         .catch(() => {})
-        .finally(() => setLoadingAi(false));
+        .finally(() => {
+          if (activeRequestRef.current === currentId) {
+            setLoadingAi(false);
+          }
+        });
     }
 
     // Loan Detail for Context
+    setLoanData(null);
+    const currentId = exc.id;
     const token = localStorage.getItem('loanguard_token');
     fetch(`/api/loans/${exc.loan_id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
       .then(r => r.json())
       .then(d => {
-        if (d.success) setLoanData(d.data);
+        if (activeRequestRef.current === currentId && d.success) {
+          setLoanData(d.data);
+        }
       })
       .catch(() => {});
   }, [exc.id, exc.current_value, exc.loan_id]);
