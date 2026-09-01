@@ -53,11 +53,12 @@ async function runQaTests() {
     body += content;
     body += `\r\n--${boundary}--\r\n`;
 
-    const res = await fetch(`${BASE_URL}/api/upload`, {
+    const res = await fetch(`${BASE_URL}/api/upload?force=true`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${operatorToken}`,
-        'Content-Type': `multipart/form-data; boundary=${boundary}`
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'x-force-upload': 'true'
       },
       body: Buffer.from(body, 'utf-8')
     });
@@ -141,6 +142,10 @@ async function runQaTests() {
     console.log(`   AI Diagnostic Explanation: "${aiRes.data?.explanation || 'N/A'}" (Confidence: ${Math.round((aiRes.data?.confidence || 0)*100)}%)`);
 
     // Single Exception Resolution
+    const testCorrectedVal = sample.field === 'loan_id'
+      ? `${sample.current_value || 'LN_QA'}_CANONICAL_${Date.now().toString().slice(-4)}`
+      : (sample.field === 'interest_rate' ? 4.5 : (sample.field === 'maturity_date' ? '2050-01-01' : 250000));
+
     const resolveRes = await fetch(`${BASE_URL}/api/exceptions/${sample.id}`, {
       method: 'PATCH',
       headers: {
@@ -149,7 +154,7 @@ async function runQaTests() {
       },
       body: JSON.stringify({
         action: 'resolve',
-        corrected_value: '250000',
+        corrected_value: testCorrectedVal,
         note: 'Corrected via automated multi-CSV QA verification'
       })
     }).then(r => r.json());
@@ -246,6 +251,7 @@ async function runQaTests() {
   console.log('====================================================');
   console.log(allPass ? '🎉 ALL CSV UPLOAD & GOVERNANCE TESTS PASSED 100%' : '⚠️ SOME TESTS REPORTED ANOMALIES');
   console.log('====================================================\n');
+  if (!allPass) process.exit(1);
 }
 
 runQaTests().catch(err => {
