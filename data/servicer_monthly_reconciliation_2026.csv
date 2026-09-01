@@ -1,0 +1,9 @@
+loan_id,current_balance,payment_status,borrower_name,source_system,last_updated_at
+LN_INST_1001,342500.00,Current,Jonathan Vance,CoreServicing_v4,2026-08-31
+LN_INST_1002,408200.00,Current,Evelyn Montgomery,CoreServicing_v4,2026-08-31
+LN_INST_1003,269850.00,Delinquent 30-Days,Marcus Sterling,CoreServicing_v4,2026-08-31
+LN_INST_1012,268000.00,Current,Beatrice Castiglione,Fidelity_Master_Sync,2026-08-31
+LN_INST_1013,382100.00,Current,Simon Fraser,Fidelity_Master_Sync,2026-08-31
+LN_INST_1014,309200.00,Current,Elena Rostova,Fidelity_Master_Sync,2026-08-31
+LN_INST_1015,451000.00,Prepaid Partial,Arthur Pendelton,CoreServicing_v4,2026-08-31
+LN_INST_1016,222100.00,Current,Maya Lin,Fidelity_Master_Sync,2026-08-31

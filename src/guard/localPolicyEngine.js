@@ -144,7 +144,7 @@ export class LocalPolicyEngine {
 
   checkNegativeBalance(action) {
     const r = this.rules.negative_balance
-    if (!r.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record) return null
     
     if (action.record.principal_balance !== undefined && action.record.principal_balance < 0) {
@@ -164,7 +164,7 @@ export class LocalPolicyEngine {
 
   checkInvalidInterestRate(action) {
     const r = this.rules.invalid_interest_rate
-    if (!r.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || action.record.interest_rate === undefined || action.record.interest_rate === null) return null
     
     const rate = action.record.interest_rate
@@ -197,7 +197,7 @@ export class LocalPolicyEngine {
 
   checkMissingBorrower(action) {
     const r = this.rules.missing_borrower
-    if (!r.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record) return null
     
     if (!action.record.borrower_name || action.record.borrower_name.trim() === '') {
@@ -217,7 +217,7 @@ export class LocalPolicyEngine {
 
   checkInvalidDates(action) {
     const r = this.rules.invalid_dates
-    if (!r.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || !action.record.origination_date || !action.record.maturity_date) return null
     
     const orig = new Date(action.record.origination_date)
@@ -240,7 +240,7 @@ export class LocalPolicyEngine {
 
   checkInvalidState(action) {
     const r = this.rules.invalid_state
-    if (!r.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || !action.record.property_state) return null
     
     const state = action.record.property_state
@@ -261,7 +261,7 @@ export class LocalPolicyEngine {
 
   checkDuplicateLoan(action, ctx) {
     const r = this.rules.duplicate_loan
-    if (!r.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || !action.record.loan_id) return null
     
     // Ledger check for duplicates
@@ -280,7 +280,7 @@ export class LocalPolicyEngine {
 
   checkStaleRecord(action, ctx) {
     const r = this.rules.stale_record
-    if (!r?.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || !action.record.last_updated_at) return null
     
     const lastUpdate = new Date(action.record.last_updated_at)
@@ -302,7 +302,7 @@ export class LocalPolicyEngine {
 
   checkDuplicateBorrowerCombo(action, ctx) {
     const r = this.rules.duplicate_borrower_combo
-    if (!r?.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || !action.record.borrower_name || !action.record.principal_balance || !action.record.origination_date) return null
     
     // Construct a composite key: Name_Amount_Date
@@ -329,7 +329,7 @@ export class LocalPolicyEngine {
 
   checkCrossSourceConflict(action, ctx) {
     const r = this.rules.cross_source_conflict
-    if (!r?.appliesTo.includes(action.type)) return null
+    if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record || !ctx.existingLoanMap) return null
     
     const existing = ctx.existingLoanMap.get(action.record.loan_id)
@@ -376,7 +376,7 @@ export class LocalPolicyEngine {
     
     // Evaluate Authored Rules FIRST (from natural-language compilation)
     for (const rule of this.authoredRules) {
-      if (!rule.appliesTo.includes(action.type)) continue
+      if (rule.appliesTo && !rule.appliesTo.includes(action.type)) continue
       
       let violation = false
       if (rule.kind === 'contact_day') {
@@ -447,32 +447,35 @@ export class LocalPolicyEngine {
           let severity = 'high'
           let outcome = DECISION.ESCALATE
 
-          if (err.path.includes('principal_balance')) {
+          const pathStr = Array.isArray(err.path) ? err.path.join('.') : String(err.path || '')
+          const msgStr = String(err.message || '')
+
+          if (pathStr.includes('principal_balance')) {
             policyId = this.rules.negative_balance?.id || 'POL-BAL-001'
             rule = 'negative_balance'
             severity = 'critical'
-          } else if (err.path.includes('interest_rate')) {
+          } else if (pathStr.includes('interest_rate')) {
             policyId = this.rules.invalid_interest_rate?.id || 'POL-RATE-001'
             rule = 'invalid_interest_rate'
-            severity = err.message.includes('25%') ? 'high' : 'critical'
-          } else if (err.path.includes('borrower_name')) {
+            severity = msgStr.includes('25%') ? 'high' : 'critical'
+          } else if (pathStr.includes('borrower_name')) {
             policyId = this.rules.missing_borrower?.id || 'POL-BOR-001'
             rule = 'missing_borrower'
             severity = 'high'
-          } else if (err.path.includes('maturity_date')) {
+          } else if (pathStr.includes('maturity_date')) {
             policyId = this.rules.invalid_dates?.id || 'POL-DATE-001'
             rule = 'invalid_dates'
             severity = 'medium'
-          } else if (err.path.includes('property_state')) {
+          } else if (pathStr.includes('property_state')) {
             policyId = this.rules.invalid_state?.id || 'POL-STATE-001'
             rule = 'invalid_state'
             severity = 'low'
-          } else if (err.path.includes('current_balance')) {
-            if (err.message.includes('original principal')) {
+          } else if (pathStr.includes('current_balance')) {
+            if (msgStr.includes('original principal')) {
               policyId = this.rules.balance_exceeds_principal?.id || 'POL-BALCAP-001'
               rule = 'balance_exceeds_principal'
               severity = 'high'
-            } else if (err.message.includes('closed')) {
+            } else if (msgStr.includes('closed')) {
               policyId = this.rules.closed_loan_balance?.id || 'POL-CLOSED-001'
               rule = 'closed_loan_balance'
               severity = 'high'
@@ -481,11 +484,11 @@ export class LocalPolicyEngine {
               rule = 'invalid_current_balance'
               severity = 'high'
             }
-          } else if (err.path.includes('payment_status')) {
+          } else if (pathStr.includes('payment_status')) {
             policyId = this.rules.payment_status_mismatch?.id || 'POL-PAYST-001'
             rule = 'payment_status_mismatch'
             severity = 'medium'
-          } else if (err.path.includes('document_status')) {
+          } else if (pathStr.includes('document_status')) {
             policyId = this.rules.missing_document_status?.id || 'POL-DOC-001'
             rule = 'missing_document_status'
             severity = 'low'
