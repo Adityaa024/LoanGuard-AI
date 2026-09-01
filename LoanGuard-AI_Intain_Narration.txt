@@ -1,42 +1,48 @@
-# LOANGUARD-AI — OFFICIAL INTAIN 5-MINUTE COMPETITION DEMO NARRATION
+# LOANGUARD-AI — OFFICIAL INTAIN FIVE-MINUTE COMPETITION DEMO NARRATION
 # Intain Campus FinTech Challenge 2026 | Full Stack Track
 
-[SCENE_01 | LOG IN AS DATA OPERATOR]
-Welcome to LoanGuard-AI, an AI-assisted loan data verification platform. We begin on the authentication dashboard, where users select their role. We log in as Aditya, the institutional Data Operator.
+[0:00–0:22 | STEP 1: DATA OPERATOR LOGIN]
+Welcome to LoanGuard-AI, an AI-assisted loan data verification platform. We begin with Aditya Raj, our Data Operator, who is responsible for bringing incoming loan data into the verification workflow.
 
-[SCENE_02 | UPLOAD A MESSY LOAN TAPE]
-The operator loads a deliberately messy loan tape containing negative balances, inverted dates, and abnormal rates. We click Run Ingestion Pipeline to parse, normalize, and evaluate the tape in real-time.
+[0:22–0:48 | STEP 2: UPLOAD MESSY LOAN TAPE]
+The operator now ingests a deliberately messy loan tape containing records that require validation before they can enter the trusted workflow.
 
-[SCENE_03 | SEE IMPORT AND VALIDATION SUMMARY]
-The validation summary separates clean records from records requiring review. The mathematical reconciliation strip proves that clean records plus affected records strictly equal total ingested records across all twelve policy rules.
+[0:48–1:07 | STEP 3: IMPORT & VALIDATION SUMMARY]
+After ingestion, the system produces an import and validation summary. The deterministic policy engine evaluates the loan records and separates records that pass from records requiring review.
 
-[SCENE_04 | OPEN RECORDS WITH VALIDATION FAILURES]
-At row level, the operator opens the Failed Rows Report, inspecting each offending field, policy rule ID, severity, and failure reason. Batch lineage preserves source provenance and processing history.
+[1:07–1:25 | STEP 4: VALIDATION FAILURES / FAILED ROWS]
+The operator can drill into the failed rows to see exactly which loan, field, rule, and value caused the validation failure.
 
-[SCENE_05 | LOG IN AS REVIEWER]
-Next, we switch to Rajesh Menon, the Exception Reviewer. The workspace updates dynamically to the Exception Review Queue, categorized by critical, high, medium, and low severity findings.
+[1:25–1:40 | STEP 5: LOG IN AS REVIEWER]
+We now move to the Reviewer persona, Rajesh Menon, whose workflow is focused on investigating and resolving exceptions.
 
-[SCENE_06 | USE AI TO EXPLAIN AN EXCEPTION]
-The deterministic validation engine identifies the failure first. The AI Copilot then explains the root cause and proposes a possible resolution using available record evidence, complete with model governance traces.
+[1:40–2:05 | STEP 6: AI EXPLAINS EXCEPTION]
+When the reviewer selects an exception, the inspector loads that exact record. The AI Copilot explains the root cause and provides a proposed resolution based on the available record context.
 
-[SCENE_07 | ACCEPT, EDIT, OR REJECT AI RECOMMENDATION]
-The recommendation is deliberately decoupled from the final human decision. The reviewer clicks Apply to Draft, observing the distinct three-state diff between source value, AI recommendation, and human draft, and adds a sign-off note.
+[2:05–2:31 | STEP 7: AI RECOMMENDATION + HUMAN CONTROL]
+Critically, the AI recommendation is separated from the final human decision. The reviewer can accept the recommendation, edit it, or reject it. Applying a recommendation creates a reviewer-controlled draft rather than silently changing the verified record.
 
-[SCENE_08 | APPROVE LOAN & CREATE VERIFIED RECORD]
-Only after explicit human approval does the system approve the loan and create the verified record. The system records the authorizer identity, assigns an immutable timestamp, and anchors the record with a SHA-256 cryptographic hash.
+[2:31–2:49 | STEP 8: APPROVE OR REJECT]
+After reviewing the proposed resolution, the reviewer makes the final decision. Only the explicit human action determines whether the record moves into the verified workflow.
 
-[SCENE_09 | LOG IN AS DATA CONSUMER & VIEW DASHBOARD]
-We switch to the Data Consumer workspace. The consumer dashboard displays the canonical verified records, portfolio verification rate, data quality score, and trust summary for downstream consumption.
+[2:49–3:07 | STEP 9: CREATE VERIFIED RECORD]
+The approved record now enters the verified state with its reviewer decision, verification metadata, and integrity information.
 
-[SCENE_10 | INSPECT AUDIT TRAIL & VERIFY LEDGER]
-The consumer clicks Verify Ledger Integrity to validate the unbroken SHA-256 Merkle chain. Opening a verified loan reconstructs its complete lifecycle: upload, import, validation, AI review, human decision, and verification.
+[3:07–3:25 | STEP 10: LOG IN AS DATA CONSUMER]
+We now move to the third persona, Alex Morgan, the Data Consumer. This workspace focuses on the verified records that are available for trusted downstream use.
 
-[SCENE_11 | SHOW API RESPONSE FOR VERIFIED RECORDS]
-The verified portfolio is also exposed through a REST API. Querying GET slash api slash verified-loans returns clean JSON data with canonical fields, source lineage, and cryptographic verification.
+[3:25–3:43 | STEP 11: VIEW VERIFIED RECORDS DASHBOARD]
+The Consumer dashboard provides the verified portfolio, its quality status, source lineage, and integrity information.
 
-[SCENE_12 | SHOW AI DEVELOPMENT LOG]
-The AI Development Log documents how AI was used during engineering, how prompts and outputs were reviewed, where AI suggestions were rejected, and the human oversight applied throughout development.
+[3:43–4:01 | STEP 12: OPEN ONE LOAN + AUDIT TRAIL]
+Opening a verified loan exposes the complete audit history, allowing the consumer to trace the record from ingestion through validation, review, and final verification.
 
-[SCENE_13 | ARCHITECTURAL CONCLUSION]
-LoanGuard-AI combines deterministic loan-data validation, human-controlled AI review, verified records, and cryptographically traceable audit history in one full-stack workflow.
+[4:01–4:15 | STEP 13: VERIFIED RECORD API]
+The same verified records are available programmatically through the verified-loans API for downstream consumers.
+
+[4:15–4:29 | STEP 14: AI DEVELOPMENT LOG]
+The AI Development Log documents the AI tools and prompts used during engineering, along with human review and adversarial testing.
+
+[4:29–4:48 | STEP 15: ARCHITECTURAL CLOSING]
+LoanGuard-AI turns messy loan data into verified, traceable records through deterministic validation, human-controlled AI review, and auditable verification.
 
