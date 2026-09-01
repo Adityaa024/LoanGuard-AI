@@ -13,33 +13,33 @@
 
 ---
 
-## 13 Completed Scenes & Narrative Flow
+## 13 Completed Live Scenes & Narrative Flow
 
-| Scene # | Scene Title | Persona / Scope | Validation Artifact | Status |
+| Scene # | Scene Title | Persona / Scope | Live Action Verified | Status |
 |---|---|---|---|:---:|
-| **Scene 1** | Login + Data Operator | Data Operator (`Aditya Raj`) | Role-based authentication cards & dashboard | **PASS** |
-| **Scene 2** | Loan Tape Ingestion | Data Operator | Ingestion of messy tape & in-memory evaluation | **PASS** |
-| **Scene 3** | Validation Summary & Policies | Data Operator | Reconciled summary strip & 12 Policy Rules modal | **PASS** |
-| **Scene 4** | Failed Rows Report & Lineage | Data Operator | Row-by-row failure table, reasons, & batch audit | **PASS** |
-| **Scene 5** | Reviewer Transition | Exception Reviewer (`Rajesh Menon`) | Master-detail queue & synchronized inspector | **PASS** |
-| **Scene 6** | AI Diagnostics & Copilot | Exception Reviewer | Root cause diagnosis, recommendation, confidence | **PASS** |
-| **Scene 7** | Human-in-the-Loop Interaction | Exception Reviewer | Decoupled 3-state diff (Source / AI / Draft Note) | **PASS** |
-| **Scene 8** | Approve & Verify | Exception Reviewer | Human approval sign-off & SHA-256 integrity anchor | **PASS** |
-| **Scene 9** | Data Consumer Dashboard | Data Consumer (`Ananya Iyer`) | Verified portfolio KPIs & 100% Trust Summary | **PASS** |
-| **Scene 10** | Verify Ledger & Audit Trail | Data Consumer | Cryptographic SHA-256 Merkle chain verification | **PASS** |
-| **Scene 11** | Verified Record REST API | Data Consumer | Governed `/api/verified-loans` endpoint | **PASS** |
-| **Scene 12** | AI Development Log | Compliance / System | Section 10 Agentic Coding Traceability Log | **PASS** |
-| **Scene 13** | Architectural Conclusion | Architectural Close | Deterministic $O(1)$ policies & HITL governance | **PASS** |
+| **Scene 1** | Login + Data Operator | Data Operator (`Aditya Raj`) | Selected Operator card, signed in, loaded dashboard | **PASS** |
+| **Scene 2** | Loan Tape Ingestion | Data Operator | Primary Tape + Adversarial preset -> Ingestion run | **PASS** |
+| **Scene 3** | Validation Summary & Policies | Data Operator | 3 KPI metrics reconciled & 12 Policy Rules modal opened | **PASS** |
+| **Scene 4** | Failed Rows Report & Lineage | Data Operator | Failed Rows Report inspected with offending fields & reasons | **PASS** |
+| **Scene 5** | Reviewer Transition | Exception Reviewer (`Rajesh Menon`) | Switched to Reviewer persona & Exception Queue | **PASS** |
+| **Scene 6** | AI Diagnostics & Copilot | Exception Reviewer | Selected exception row -> AI Root Cause & Recommendation | **PASS** |
+| **Scene 7** | Human-in-the-Loop Interaction | Exception Reviewer | Clicked 'Apply to Draft' -> Decoupled 3-state diff + Note | **PASS** |
+| **Scene 8** | Approve & Verify | Exception Reviewer | Clicked 'Approve & Verify' -> Status updated to Verified | **PASS** |
+| **Scene 9** | Data Consumer Dashboard | Data Consumer (`Ananya Iyer`) | Switched to Consumer persona -> Verified Portfolio KPIs | **PASS** |
+| **Scene 10** | Verify Ledger & Audit Trail | Data Consumer | Clicked 'Verify Ledger Integrity' -> SHA-256 Merkle chain | **PASS** |
+| **Scene 11** | Verified Record REST API | Data Consumer | Navigated to `/api/verified-loans` REST JSON response | **PASS** |
+| **Scene 12** | AI Development Log | Compliance / System | Navigated to `/ai_development_log.md` engineering audit | **PASS** |
+| **Scene 13** | Architectural Conclusion | Architectural Close | Final canonical overview & architectural summary | **PASS** |
 
 ---
 
 ## Quality Assurance Invariants Verified
 
-1. [x] **No Contradictory Numbers**: Verification counts reconcile with canonical portfolio database state.
-2. [x] **Decoupled 3-State Model**: AI suggestions are presented as reviewer drafts and never silently mutate records without explicit human sign-off.
-3. [x] **Tamper-Evident Proof**: Cryptographic SHA-256 hash chains verify unbroken provenance.
-4. [x] **Persona Hygiene**: Top-right identity dynamically reflects active persona (Operator, Reviewer, Consumer).
+1. [x] **No Contradictory Numbers**: Live database counts match between sidebar, KPIs, and canonical tables.
+2. [x] **Decoupled 3-State Model**: Source values, AI suggestions, and final human values remain distinct.
+3. [x] **Zero Silent Modifications**: AI suggestions require human approval to enter the verified ledger.
+4. [x] **Cryptographic Provenance**: SHA-256 Merkle hash chain verified.
 5. [x] **Duration Compliance**: Under the 5:00 maximum limit (2m 25s).
 
 ## Final Demo Readiness
-**STATUS: PASS (READY FOR INTAIN SUBMISSION)**
+**STATUS: PASS (100% PS COMPLIANT & READY FOR INTAIN SUBMISSION)**
