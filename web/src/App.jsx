@@ -29,26 +29,26 @@ const Hive3D = lazy(() => import('./Hive3D.jsx'))
 
 const USER_PROFILES = {
   operator: {
-    name: 'Aditya Raj',
+    name: 'Aditya',
     role: 'Data Operator',
     email: 'aditya.raj@gmail.com',
-    avatar: 'AR',
+    avatar: 'A',
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
     permissions: 'Ingestion, Normalization & Raw Lineage'
   },
   reviewer: {
     name: 'Rajesh Menon',
-    role: 'Exception Reviewer',
+    role: 'Reviewer',
     email: 'rajesh.menon@loanguard.ai',
     avatar: 'RM',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
     permissions: 'Exception Queue, AI Review & Audit Sign-off'
   },
   consumer: {
-    name: 'Ananya Iyer',
+    name: 'Alex Morgan',
     role: 'Data Consumer',
-    email: 'ananya.iyer@loanguard.ai',
-    avatar: 'AI',
+    email: 'alex.morgan@loanguard.ai',
+    avatar: 'AM',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     permissions: 'Verified Export, Audit Trail & API Access'
   }
@@ -194,7 +194,7 @@ export default function App() {
     <div className="flex h-screen w-full bg-[#f8fafc] text-slate-900 overflow-hidden font-sans antialiased selection:bg-indigo-500 selection:text-white">
       
       {/* Dynamic Institutional Left Navigation Sidebar */}
-      <aside className="w-64 border-r border-slate-200/80 bg-white flex flex-col justify-between shrink-0 select-none">
+      <aside className="w-56 border-r border-slate-200/80 bg-white flex flex-col justify-between shrink-0 select-none">
         
         {/* Brand Header */}
         <div className="p-4 border-b border-slate-200/80 flex items-center justify-between">

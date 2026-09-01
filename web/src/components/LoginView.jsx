@@ -382,7 +382,7 @@ export default function LoginView({ onLoginSuccess }) {
               </div>
               <div className="text-left flex-1 min-w-0">
                 <div className="text-xs font-semibold text-slate-800 group-hover:text-emerald-900 transition-colors">
-                  Aditya Raj <span className="font-normal text-slate-400">· Data Operator</span>
+                  Aditya <span className="font-normal text-slate-400">· Data Operator</span>
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">Ingestion & Real-Time Quality Studio</div>
               </div>
@@ -400,7 +400,7 @@ export default function LoginView({ onLoginSuccess }) {
               </div>
               <div className="text-left flex-1 min-w-0">
                 <div className="text-xs font-semibold text-slate-800 group-hover:text-amber-900 transition-colors">
-                  Rajesh Menon <span className="font-normal text-slate-400">· Exception Reviewer</span>
+                  Rajesh Menon <span className="font-normal text-slate-400">· Reviewer</span>
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">AI Diagnostic Copilot & Remediation Queue</div>
               </div>
@@ -409,7 +409,7 @@ export default function LoginView({ onLoginSuccess }) {
 
             <button
               type="button"
-              onClick={() => quickLaunch('ananya.iyer@loanguard.ai')}
+              onClick={() => quickLaunch('alex.morgan@loanguard.ai')}
               disabled={loading}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-teal-300 bg-white hover:bg-teal-50/50 transition-all group cursor-pointer active:scale-[0.99]"
             >
@@ -418,7 +418,7 @@ export default function LoginView({ onLoginSuccess }) {
               </div>
               <div className="text-left flex-1 min-w-0">
                 <div className="text-xs font-semibold text-slate-800 group-hover:text-teal-900 transition-colors">
-                  Ananya Iyer <span className="font-normal text-slate-400">· Data Consumer</span>
+                  Alex Morgan <span className="font-normal text-slate-400">· Data Consumer</span>
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">Verified Portfolio & SHA-256 Audit Trail</div>
               </div>

@@ -181,23 +181,12 @@ export default function OperatorView() {
             Upload raw loan tapes, execute real-time policy engine validation, and monitor portfolio data quality.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={fetchData} 
-            className="btn-secondary text-xs py-1.5 px-3"
-            title="Refresh Ingestion Metrics"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-            <span>Sync</span>
-          </button>
-        </div>
       </div>
 
       {/* Enterprise KPI Metrics Bar */}
       {loadingData ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(idx => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map(idx => (
             <div key={idx} className="saas-card p-4 flex flex-col justify-between h-28 bg-slate-50/70 border-slate-200">
               <div className="flex items-center justify-between">
                 <div className="h-3 w-24 bg-slate-200 rounded-md"></div>
@@ -211,49 +200,31 @@ export default function OperatorView() {
           ))}
         </div>
       ) : summary ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           
           {/* Quality Score */}
           <div className="saas-card p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Quality Score</span>
-              <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
-                <Sparkles className="w-4 h-4" />
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Data Quality</span>
+              <span className="text-2xl font-bold text-slate-900">
+                {summary.data_quality_score}%
               </span>
             </div>
-            <div className="mt-2">
-              <div className="flex items-baseline gap-2">
-                <span className={`text-2xl font-bold ${summary.data_quality_score > 90 ? 'text-emerald-600' : summary.data_quality_score > 70 ? 'text-amber-500' : 'text-rose-600'}`}>
-                  {summary.data_quality_score}%
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">Compliance Rate</span>
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${summary.data_quality_score > 90 ? 'bg-emerald-500' : summary.data_quality_score > 70 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                  style={{ width: `${summary.data_quality_score}%` }}
-                />
-              </div>
+            <div className="mt-2 font-mono text-xs text-slate-400 tracking-tighter">
+              {(() => {
+                const filled = Math.round((summary.data_quality_score / 100) * 15);
+                const empty = 15 - filled;
+                return (
+                  <span className={summary.data_quality_score > 90 ? 'text-emerald-500' : summary.data_quality_score > 70 ? 'text-amber-500' : 'text-rose-500'}>
+                    {'█'.repeat(filled)}
+                    <span className="text-slate-200">{'░'.repeat(empty)}</span>
+                  </span>
+                );
+              })()}
             </div>
-          </div>
-
-          <div className="saas-card p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Ingested</span>
-              <span className="p-1.5 rounded-lg bg-slate-100 text-slate-600">
-                <Database className="w-4 h-4" />
-              </span>
-            </div>
-            <div className="mt-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-slate-900">
-                  {summary.total_loans?.toLocaleString() || 0}
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">Raw Records</span>
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
-                <span>{summary.uploads_count || 0}</span> batches processed
-              </p>
+            <div className="mt-3">
+              <div className="text-[10px] text-slate-400 font-medium uppercase">Current batch</div>
+              <div className="text-sm font-semibold text-slate-700">{summary.total_loans?.toLocaleString() || 0} records</div>
             </div>
           </div>
 
