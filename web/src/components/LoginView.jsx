@@ -68,7 +68,7 @@ export default function LoginView({ onLoginSuccess }) {
     {
       title: 'Enterprise Grade',
       subtitle: 'Role-based access control with 3 specialized dashboard personas.',
-      detail: 'SOC-2 compliant workflows with full audit trail for securitization readiness.',
+      detail: 'SOC-2 compliant workflows with full audit trail for statutory compliance and institutional governance.',
     }
   ];
 

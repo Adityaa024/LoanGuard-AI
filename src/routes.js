@@ -229,17 +229,43 @@ export async function registerRoutes(app, { ROOT }) {
       const verifiedLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'verified'`)).count
       const totalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions`)).count
       const openExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open'`)).count
+      const resolvedExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'resolved'`)).count
       const uploadsCount = (await db.get(`SELECT COUNT(*) as count FROM upload_batches`)).count
       
-      // Real severity breakdown from DB
+      // Clean records = valid + verified unique loans
+      const cleanRecords = validLoans + verifiedLoans
+      // Affected records = unique loans with open exceptions
+      const affectedRecords = (await db.get(`SELECT COUNT(DISTINCT loan_id) as count FROM exceptions WHERE status = 'open'`)).count || exceptionLoans
+      
+      // Real severity breakdown from DB (open exceptions findings)
       const criticalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'critical'`)).count
       const highExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'high'`)).count
       const mediumExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'medium'`)).count
       const lowExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'low'`)).count
       
-      const data_quality_score = totalLoans > 0 ? Math.round(((validLoans + verifiedLoans) / totalLoans) * 100) : 100
+      const data_quality_score = totalLoans > 0 ? Math.round((cleanRecords / totalLoans) * 100) : 100
       
-      res.json({ success: true, data: { total_loans: totalLoans, valid_loans: validLoans, exception_loans: exceptionLoans, verified_loans: verifiedLoans, total_exceptions: totalExceptions, open_exceptions: openExceptions, resolved_exceptions: totalExceptions - openExceptions, uploads_count: uploadsCount, data_quality_score, critical_exceptions: criticalExceptions, high_exceptions: highExceptions, medium_exceptions: mediumExceptions, low_exceptions: lowExceptions } })
+      res.json({ 
+        success: true, 
+        data: { 
+          total_loans: totalLoans, 
+          valid_loans: validLoans, 
+          exception_loans: exceptionLoans, 
+          verified_loans: verifiedLoans, 
+          clean_records: cleanRecords,
+          affected_records: affectedRecords,
+          total_exceptions: totalExceptions, 
+          open_exceptions: openExceptions, 
+          resolved_exceptions: resolvedExceptions, 
+          uploads_count: uploadsCount, 
+          data_quality_score, 
+          critical_exceptions: criticalExceptions, 
+          high_exceptions: highExceptions, 
+          medium_exceptions: mediumExceptions, 
+          low_exceptions: lowExceptions,
+          reconciled: (cleanRecords + affectedRecords === totalLoans)
+        } 
+      })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
@@ -300,14 +326,22 @@ export async function registerRoutes(app, { ROOT }) {
     try {
       const db = await getDb()
       const limit = Math.min(Math.max(parseInt(req.query.limit) || 500, 1), 2000)
-      const exc = await db.all(`
+      const status = req.query.status || 'open'
+      
+      let query = `
         SELECT e.*, l.loan_id as original_loan_id 
         FROM exceptions e 
         JOIN loans l ON e.loan_id = l.id 
-        WHERE e.status = 'open' 
-        ORDER BY e.id DESC 
-        LIMIT ?
-      `, [limit])
+      `
+      const params = []
+      if (status !== 'all') {
+        query += ` WHERE e.status = ? `
+        params.push(status)
+      }
+      query += ` ORDER BY e.id DESC LIMIT ? `
+      params.push(limit)
+
+      const exc = await db.all(query, params)
       res.json({ success: true, data: exc.map(e => ({...e, loan_id: e.original_loan_id})) })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
@@ -382,8 +416,17 @@ export async function registerRoutes(app, { ROOT }) {
   // Cryptographic audit chain verification
   const handleVerifyAudit = async (req, res) => {
     try {
+      const db = await getDb()
       const result = await audit.verify()
-      res.json({ success: true, ...result })
+      const verifiedLoansCount = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'verified'`)).count
+      const totalAuditEntries = await audit.size()
+      res.json({ 
+        success: true, 
+        ...result,
+        verified_loans_count: verifiedLoansCount,
+        total_events: totalAuditEntries,
+        verified_at: new Date().toISOString()
+      })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
@@ -499,10 +542,10 @@ export async function registerRoutes(app, { ROOT }) {
           break
         case 'POL-DUP-001':
         case 'POL-ID-001':
-          explanation = `Duplicate or conflicting Primary Identifier detected (${exc.current_value || exc.description}). Identical loan IDs violate portfolio uniqueness constraints and indicate multi-servicer record collision.`
-          confidence = 0.94
-          suggestedValue = exc.current_value ? `${exc.current_value}_remediated` : 'LN_CANONICAL'
-          recommendation = `Deduplicate record against canonical master tape or assign a unique versioned identifier.`
+          explanation = `Duplicate Loan ID detected: ${exc.current_value || exc.description}. Another record in the active portfolio shares this identifier, violating primary key uniqueness.`
+          confidence = 0.85
+          suggestedValue = exc.current_value ? `${exc.current_value}_V2` : null
+          recommendation = `Duplicate Loan ID detected. Recommended actions: confirm canonical record, mark as duplicate, request source correction, or assign versioned identifier upon reviewer confirmation.`
           break
         case 'POL-ZIP-001':
           explanation = `Property Postal/Zip Code is invalid or malformed ("${exc.current_value}"). US Zip codes must follow standard 5-digit format.`
@@ -517,10 +560,10 @@ export async function registerRoutes(app, { ROOT }) {
           recommendation = `Standardize collateral asset classification to statutory property categories.`
           break
         default:
-          explanation = `Compliance policy anomaly detected: ${exc.description || exc.rule_name}. Evaluated against statutory securitization constraints.`
+          explanation = `Validation policy finding: ${exc.description || exc.rule_name}. Evaluated against statutory loan tape compliance rules.`
           confidence = 0.85
           suggestedValue = exc.suggested_value || exc.current_value
-          recommendation = `Review collateral note against canonical securitization standard.`
+          recommendation = `Review record against source documentation and statutory validation rules.`
       }
 
       // Record AI intervention in Audit Log
@@ -746,7 +789,7 @@ export async function registerRoutes(app, { ROOT }) {
       if (field === 'principal_balance' && Number(current_value) < 0) {
         severity = 'CRITICAL'
         riskScore = 98
-        rationale = 'Negative principal creates immediate financial loss exposure and renders loan ineligible for securitization pool.'
+        rationale = 'Negative principal creates immediate financial loss exposure and renders loan ineligible for institutional portfolio verification.'
       } else if (field === 'interest_rate' && (Number(current_value) < 0 || Number(current_value) > 25)) {
         severity = 'CRITICAL'
         riskScore = 92

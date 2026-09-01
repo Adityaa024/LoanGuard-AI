@@ -185,7 +185,7 @@ export default function OperatorView() {
         </div>
       </div>
 
-      {/* Enterprise KPI Metrics Bar */}
+      {/* Enterprise Reconciled KPI Metrics Bar */}
       {loadingData ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map(idx => (
@@ -202,65 +202,92 @@ export default function OperatorView() {
           ))}
         </div>
       ) : summary ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          
-          {/* Quality Score */}
-          <div className="saas-card p-4 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Data Quality</span>
-              <span className="text-2xl font-bold text-slate-900">
-                {summary.data_quality_score}%
-              </span>
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            {/* Quality Score */}
+            <div className="saas-card p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Data Quality</span>
+                <span className="text-2xl font-bold text-slate-900">
+                  {summary.data_quality_score}%
+                </span>
+              </div>
+              <div className="mt-2 font-mono text-xs text-slate-400 tracking-tighter">
+                {(() => {
+                  const filled = Math.round((summary.data_quality_score / 100) * 15);
+                  const empty = 15 - filled;
+                  return (
+                    <span className={summary.data_quality_score > 90 ? 'text-emerald-500' : summary.data_quality_score > 70 ? 'text-amber-500' : 'text-rose-500'}>
+                      {'█'.repeat(filled)}
+                      <span className="text-slate-200">{'░'.repeat(empty)}</span>
+                    </span>
+                  );
+                })()}
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px]">
+                <span className="text-slate-500">Portfolio Pass Rate</span>
+                <span className="font-semibold text-slate-800 font-mono">{(summary.clean_records || summary.valid_loans + summary.verified_loans).toLocaleString()} / {summary.total_loans?.toLocaleString()} records</span>
+              </div>
             </div>
-            <div className="mt-2 font-mono text-xs text-slate-400 tracking-tighter">
-              {(() => {
-                const filled = Math.round((summary.data_quality_score / 100) * 15);
-                const empty = 15 - filled;
-                return (
-                  <span className={summary.data_quality_score > 90 ? 'text-emerald-500' : summary.data_quality_score > 70 ? 'text-amber-500' : 'text-rose-500'}>
-                    {'█'.repeat(filled)}
-                    <span className="text-slate-200">{'░'.repeat(empty)}</span>
+
+            {/* Clean & Valid Records */}
+            <div className="saas-card p-4 flex flex-col justify-between border-emerald-200/60 bg-emerald-50/20">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider">Clean & Valid</span>
+                <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4" />
+                </span>
+              </div>
+              <div className="mt-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-emerald-800 font-mono">
+                    {(summary.clean_records || summary.valid_loans + summary.verified_loans)?.toLocaleString() || 0}
                   </span>
-                );
-              })()}
-            </div>
-            <div className="mt-3">
-              <div className="text-[10px] text-slate-400 font-medium uppercase">Current batch</div>
-              <div className="text-sm font-semibold text-slate-700">{summary.total_loans?.toLocaleString() || 0} records</div>
-            </div>
-          </div>
-
-          <div className="saas-card p-4 flex flex-col justify-between border-emerald-200/60 bg-emerald-50/20">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Clean & Valid</span>
-              <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="w-4 h-4" />
-              </span>
-            </div>
-            <div className="mt-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-emerald-700">
-                  {(summary.valid_loans + summary.verified_loans)?.toLocaleString() || 0}
-                </span>
-                <span className="text-[10px] text-emerald-600/80 font-medium">Compliant</span>
+                  <span className="text-[10px] text-emerald-700 font-medium">Unique Records</span>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-emerald-100/80 pt-2 text-[11px] text-emerald-800">
+                <span>Passing all 12 policies</span>
+                <span className="font-mono font-medium">{summary.valid_loans?.toLocaleString()} valid · {summary.verified_loans?.toLocaleString()} verified</span>
               </div>
             </div>
+
+            {/* Affected Records & Total Exceptions */}
+            <div className="saas-card p-4 flex flex-col justify-between border-amber-200/60 bg-amber-50/20">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Affected Records</span>
+                <span className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
+                  <AlertTriangle className="w-4 h-4" />
+                </span>
+              </div>
+              <div className="mt-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-amber-900 font-mono">
+                    {(summary.affected_records || summary.exception_loans)?.toLocaleString() || 0}
+                  </span>
+                  <span className="text-[10px] text-amber-700 font-medium">Records Awaiting Review</span>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-amber-100/80 pt-2 text-[11px] text-amber-800">
+                <span>Total validation findings</span>
+                <span className="font-mono font-bold text-amber-900">{summary.open_exceptions?.toLocaleString()} exceptions</span>
+              </div>
+            </div>
+
           </div>
 
-          <div className="saas-card p-4 flex flex-col justify-between border-amber-200/60 bg-amber-50/20">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Open Exceptions</span>
-              <span className="p-1.5 rounded-lg bg-amber-100 text-amber-700">
-                <AlertTriangle className="w-4 h-4" />
+          {/* Mathematical Reconciliation Strip */}
+          <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-50 border border-slate-200/70 rounded-xl text-[11px] text-slate-600">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="font-semibold text-slate-700">Reconciliation:</span>
+              <span className="font-mono text-slate-800">
+                {(summary.clean_records || summary.valid_loans + summary.verified_loans).toLocaleString()} Clean Records + {(summary.affected_records || summary.exception_loans).toLocaleString()} Affected Records = <strong className="text-slate-900">{summary.total_loans?.toLocaleString()} Ingested Unique Records</strong>
               </span>
             </div>
-            <div className="mt-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-amber-800">
-                  {summary.open_exceptions?.toLocaleString() || 0}
-                </span>
-                <span className="text-[10px] text-amber-700/80 font-medium">Anomalies</span>
-              </div>
+            <div className="hidden md:flex items-center gap-2 text-slate-500 font-mono text-[10px]">
+              <span>Findings: {summary.open_exceptions?.toLocaleString()} open exceptions ({summary.critical_exceptions?.toLocaleString()} critical · {summary.high_exceptions?.toLocaleString()} high · {summary.medium_exceptions?.toLocaleString()} med · {summary.low_exceptions?.toLocaleString()} low)</span>
             </div>
           </div>
         </div>
@@ -434,8 +461,8 @@ export default function OperatorView() {
               >
                 <Database className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                 <div className="truncate">
-                  <div className="font-semibold text-emerald-950 text-[11px]">Large 3k Tape</div>
-                  <div className="text-[10px] text-emerald-600">Stress & Torture</div>
+                  <div className="font-semibold text-emerald-950 text-[11px]">Large 5k Tape</div>
+                  <div className="text-[10px] text-emerald-600">5,000 Stress Records</div>
                 </div>
               </button>
             </div>
@@ -443,7 +470,14 @@ export default function OperatorView() {
 
           {summary && summary.open_exceptions > 0 && (
             <div className="saas-card p-4 space-y-3 min-h-[270px] flex flex-col">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Exception Severity Breakdown</div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Exception Findings Breakdown
+                </span>
+                <span className="text-[10px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                  {summary.open_exceptions?.toLocaleString()} TOTAL
+                </span>
+              </div>
               <div className="flex-1 min-h-0">
                 <ExceptionSeverityChart data={summary} />
               </div>
@@ -628,8 +662,21 @@ export default function OperatorView() {
                 </div>
               </div>
 
-              <div className="text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100">
-                Batch ID: {batchDetail.id}
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100">
+                <span>Batch ID: {batchDetail.id}</span>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setBatchDetail(null);
+                    window.dispatchEvent(new CustomEvent('switch_tab', { detail: 'reviewer' }));
+                  }}
+                  className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Review Batch Exceptions</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>

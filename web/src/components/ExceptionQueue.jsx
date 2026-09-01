@@ -41,6 +41,7 @@ export default function ExceptionQueue() {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [ruleFilter, setRuleFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('open'); // 'open', 'resolved', 'all'
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const toast = useToast();
@@ -48,7 +49,7 @@ export default function ExceptionQueue() {
   const fetchExceptions = useCallback(() => {
     const token = localStorage.getItem('loanguard_token');
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-    fetch('/api/exceptions', { headers: authHeaders })
+    fetch(`/api/exceptions?status=${statusFilter}`, { headers: authHeaders })
       .then(r => r.json())
       .then(d => {
         if (d && d.success && Array.isArray(d.data)) {
@@ -68,7 +69,7 @@ export default function ExceptionQueue() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => { fetchExceptions() }, [fetchExceptions]);
 
@@ -108,7 +109,7 @@ export default function ExceptionQueue() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, severityFilter, ruleFilter]);
+  }, [searchTerm, severityFilter, ruleFilter, statusFilter]);
 
   const totalPages = Math.ceil(filteredExceptions.length / pageSize) || 1;
   const paginatedExceptions = useMemo(() => {
@@ -199,7 +200,7 @@ export default function ExceptionQueue() {
     }
   };
 
-  // Bulk Resolution using dedicated batch endpoint
+  // Bulk Resolution
   const handleBulkResolve = async (action = 'approve') => {
     if (selectedIds.size === 0) return;
     setBulkBusy(true);
@@ -247,7 +248,7 @@ export default function ExceptionQueue() {
     );
   }
 
-  const isAllSelected = filteredExceptions.length > 0 && selectedIds.size === filteredExceptions.length;
+  const isAllSelected = paginatedExceptions.length > 0 && selectedIds.size === paginatedExceptions.length;
 
   return (
     <div className="flex h-full gap-6 relative">
@@ -256,12 +257,12 @@ export default function ExceptionQueue() {
       <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${selectedExc ? 'hidden lg:flex lg:w-[40%]' : 'w-full'}`}>
         
         {/* Header */}
-        <div className="mb-4">
+        <div className="mb-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Exception Review Queue</span>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                {exceptions.length} Pending Review
+                {exceptions.length} {statusFilter === 'open' ? 'Pending Review' : statusFilter === 'resolved' ? 'Resolved' : 'Total'}
               </span>
             </h2>
             <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
@@ -271,6 +272,27 @@ export default function ExceptionQueue() {
           <p className="text-xs text-slate-500 mt-0.5">
             Evaluate flagged compliance anomalies and resolve them using AI Copilot suggestions.
           </p>
+        </div>
+
+        {/* Status Filter Tabs (Pending, Resolved, All) */}
+        <div className="flex items-center gap-1.5 mb-2.5">
+          {[
+            { id: 'open', label: 'Pending Review' },
+            { id: 'resolved', label: 'Resolved' },
+            { id: 'all', label: 'All Statuses' }
+          ].map(st => (
+            <button
+              key={st.id}
+              onClick={() => setStatusFilter(st.id)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                statusFilter === st.id 
+                  ? 'bg-emerald-700 text-white shadow-xs' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {st.label}
+            </button>
+          ))}
         </div>
 
         {/* Severity Filter Tabs */}
@@ -306,7 +328,7 @@ export default function ExceptionQueue() {
             <input 
               type="text" 
               placeholder="Search ID, Rule, Field or Violation..." 
-              className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-8 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs"
+              className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl !pl-9.5 pr-8 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-2xs"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
@@ -341,132 +363,146 @@ export default function ExceptionQueue() {
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
             <span className="hidden sm:inline">✦ AI Batch Summary</span>
-            <span className="hidden sm:inline text-[10px] font-mono text-emerald-600">
-              {severityCounts.CRITICAL > 0 && `${severityCounts.CRITICAL} critical`}
-              {severityCounts.HIGH > 0 && ` · ${severityCounts.HIGH} high`}
-            </span>
           </button>
         </div>
 
-        {/* Exceptions Table Card */}
-        <div className="saas-card p-0 flex-1 overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-auto">
-            {filteredExceptions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-10 text-slate-400">
-                <CheckCircle2 className="w-10 h-10 mb-3 text-emerald-500 stroke-[1.5]" />
-                <p className="text-xs font-semibold text-slate-700">
-                  {exceptions.length === 0 ? 'All exceptions have been cleared!' : 'No exceptions match current filters.'}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-1">Portfolio data meets active Warden policies.</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead className="table-header">
-                  <tr>
-                    <th className="px-3 py-2.5 w-8 text-center">
-                      <button 
-                        onClick={toggleSelectAll} 
-                        className="text-slate-400 hover:text-indigo-600"
-                        title="Select all on this view"
-                      >
-                        {isAllSelected ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4" />}
-                      </button>
-                    </th>
-                    <th className="px-3 py-2.5">Loan Reference</th>
-                    <th className="px-3 py-2.5">Field / Rule</th>
-                    <th className="px-3 py-2.5 text-right">Severity</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {paginatedExceptions.map(exc => {
-                    const isSelected = selectedExc?.id === exc.id;
-                    const isChecked = selectedIds.has(exc.id);
-                    return (
-                      <tr
-                        key={exc.id}
-                        onClick={() => setSelectedExc(exc)}
-                        className={`cursor-pointer transition-colors group ${
-                          isSelected 
-                            ? 'bg-emerald-50/80 border-l-[3px] border-l-emerald-600' 
-                            : 'hover:bg-slate-50/80 border-l-[3px] border-l-transparent'
-                        }`}
-                      >
-                        <td className="px-3 py-2.5 text-center" onClick={(e) => toggleSelectOne(exc.id, e)}>
-                          {isChecked ? (
-                            <CheckSquare className="w-4 h-4 text-emerald-600 inline" />
-                          ) : (
-                            <Square className="w-4 h-4 text-slate-300 group-hover:text-slate-400 inline" />
-                          )}
-                        </td>
-
-                        <td className="table-cell">
-                          <div className="font-mono text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                            {exc.loan_id}
-                          </div>
-                          <div className="text-[11px] text-slate-500 truncate max-w-[170px] mt-0.5">
-                            {exc.description || exc.rule_name}
-                          </div>
-                        </td>
-
-                        <td className="table-cell">
-                          <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                            {exc.field}
-                          </span>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            {exc.rule_id}
-                          </div>
-                        </td>
-
-                        <td className="table-cell text-right">
-                          <SeverityBadge severity={exc.severity} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Pagination Controls Footer */}
-          {filteredExceptions.length > 0 && (
-            <div className="px-4 py-2.5 border-t border-slate-200/80 bg-slate-50/60 flex items-center justify-between text-xs text-slate-600 shrink-0">
-              <span className="text-[11px] font-medium text-slate-500">
-                Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filteredExceptions.length)} of {filteredExceptions.length}
-              </span>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white transition-colors cursor-pointer"
-                >
-                  Prev
-                </button>
-                <span className="px-2 text-[11px] font-mono text-slate-600">
-                  {page}/{totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-white transition-colors cursor-pointer"
-                >
-                  Next
-                </button>
-              </div>
+        {/* Bulk Action Bar when items selected */}
+        {selectedIds.size > 0 && (
+          <div className="mb-3 p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 animate-in fade-in duration-150">
+            <span className="text-xs font-semibold text-emerald-950 flex items-center gap-1.5">
+              <CheckSquare className="w-4 h-4 text-emerald-600" />
+              <span>{selectedIds.size} exceptions selected</span>
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handleBulkResolve('reject')}
+                disabled={bulkBusy}
+                className="btn-danger text-[11px] py-1 px-2.5"
+              >
+                Bulk Reject
+              </button>
+              <button
+                onClick={() => handleBulkResolve('approve')}
+                disabled={bulkBusy}
+                className="btn-primary text-[11px] py-1 px-3 shadow-emerald-500/10"
+              >
+                {bulkBusy ? 'Resolving...' : 'Bulk Approve (SHA-256)'}
+              </button>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Queue Table */}
+        <div className="flex-1 overflow-auto saas-card p-0">
+          <table className="w-full text-left border-collapse">
+            <thead className="table-header">
+              <tr>
+                <th className="px-3 py-2.5 w-8">
+                  <button 
+                    onClick={toggleSelectAll} 
+                    className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                    title={isAllSelected ? "Deselect all" : "Select all on page"}
+                  >
+                    {isAllSelected ? (
+                      <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Square className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-3 py-2.5">Loan Identifier</th>
+                <th className="px-3 py-2.5">Policy Rule</th>
+                <th className="px-3 py-2.5">Field</th>
+                <th className="px-3 py-2.5 text-right">Severity</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paginatedExceptions.map(exc => {
+                const isSelected = selectedExc && selectedExc.id === exc.id;
+                const isChecked = selectedIds.has(exc.id);
+                return (
+                  <tr
+                    key={exc.id}
+                    onClick={() => setSelectedExc(exc)}
+                    className={`hover:bg-slate-50 transition-colors cursor-pointer group ${
+                      isSelected ? 'bg-emerald-50/60 font-medium' : ''
+                    }`}
+                  >
+                    <td className="table-cell px-3 py-2.5" onClick={e => e.stopPropagation()}>
+                      <button 
+                        onClick={(e) => toggleSelectOne(exc.id, e)} 
+                        className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                      >
+                        {isChecked ? (
+                          <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Square className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </td>
+
+                    <td className="table-cell px-3 py-2.5">
+                      <div className="font-mono text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                        {exc.loan_id}
+                      </div>
+                    </td>
+
+                    <td className="table-cell px-3 py-2.5">
+                      <div className="font-semibold text-slate-800 text-xs truncate max-w-[140px]">{exc.rule_name}</div>
+                      <div className="text-[10px] font-mono text-slate-400">{exc.rule_id}</div>
+                    </td>
+
+                    <td className="table-cell px-3 py-2.5">
+                      <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                        {exc.field}
+                      </span>
+                    </td>
+
+                    <td className="table-cell px-3 py-2.5 text-right">
+                      <SeverityBadge severity={exc.severity} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+
+        {/* Pagination Bar */}
+        {totalPages > 1 && (
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Page {page} of {totalPages} ({filteredExceptions.length} items)
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(p - 1, 1))}
+                disabled={page === 1}
+                className="btn-secondary py-1 px-2.5 text-xs disabled:opacity-30"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(p + 1, totalPages))}
+                disabled={page === totalPages}
+                className="btn-secondary py-1 px-2.5 text-xs disabled:opacity-30"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 
-      {/* Right Pane: Reviewer Copilot Workbench & Loan Collateral Inspector */}
-      {selectedExc ? (
-        <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      {/* Right Pane: Reviewer Workbench Inspector */}
+      <div className={`flex-1 min-w-0 transition-all duration-300 ${selectedExc ? 'flex flex-col h-full' : 'hidden lg:flex lg:flex-col lg:items-center lg:justify-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200'}`}>
+        {selectedExc ? (
           <ReviewerWorkbench 
-            exc={selectedExc} 
+            key={selectedExc.id}
+            exc={selectedExc}
             onResolved={() => {
-              toast.success("Exception Resolved", `Loan ${selectedExc.loan_id} updated and signed.`);
+              toast.success("Exception Handled", `Loan ${selectedExc.loan_id} resolution committed.`);
               fetchExceptions();
             }}
             onNext={handleNext}
@@ -475,63 +511,14 @@ export default function ExceptionQueue() {
             hasPrev={currentIndex > 0}
             position={`${currentIndex + 1} of ${filteredExceptions.length}`}
           />
-        </div>
-      ) : (
-        <div className="hidden lg:flex flex-1 items-center justify-center saas-card p-12 text-slate-400">
-          <div className="text-center">
-            <SlidersHorizontal className="w-10 h-10 mb-3 mx-auto text-slate-300 stroke-[1.5]" />
-            <p className="text-xs font-semibold text-slate-700">Select an exception to open the AI Copilot Workbench</p>
-            <p className="text-[11px] text-slate-400 mt-1">Review root cause explanations, diffs, and sign off verified records.</p>
+        ) : (
+          <div className="text-center p-8 space-y-2 text-slate-400">
+            <Sparkles className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="text-sm font-semibold text-slate-600">Select an exception to inspect</p>
+            <p className="text-xs">AI Copilot will generate diagnostic insights and remediation options.</p>
           </div>
-        </div>
-      )}
-
-      {/* Floating Bulk Action Bar */}
-      <AnimatePresence>
-        {selectedIds.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-4"
-          >
-            <div className="flex items-center gap-2 text-xs font-semibold">
-              <span className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px] font-bold">
-                {selectedIds.size}
-              </span>
-              <span>selected</span>
-            </div>
-
-            <div className="h-4 w-px bg-slate-700"></div>
-
-            <button
-              onClick={() => handleBulkResolve('approve')}
-              disabled={bulkBusy}
-              className="btn-primary text-xs py-1.5 px-3 bg-indigo-600 hover:bg-indigo-500"
-            >
-              {bulkBusy ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-              <span>Bulk Auto-Fix & Approve</span>
-            </button>
-
-            <button
-              onClick={() => handleBulkResolve('reject')}
-              disabled={bulkBusy}
-              className="btn-secondary text-xs py-1.5 px-3 bg-slate-800 text-rose-400 hover:bg-slate-700 border-slate-700"
-            >
-              <XCircle className="w-3.5 h-3.5" />
-              <span>Bulk Reject</span>
-            </button>
-
-            <button
-              onClick={() => setSelectedIds(new Set())}
-              className="text-slate-400 hover:text-white p-1"
-              title="Clear selection"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </motion.div>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* AI Batch Diagnostics Modal */}
       <AnimatePresence>
@@ -545,7 +532,7 @@ export default function ExceptionQueue() {
             >
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
@@ -564,14 +551,14 @@ export default function ExceptionQueue() {
               <div className="py-4 space-y-4">
                 {batchAiLoading ? (
                   <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 text-sm">
-                    <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
                     <span>Synthesizing exception clusters...</span>
                   </div>
                 ) : batchAiData ? (
                   <>
-                    <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-950 leading-relaxed">
-                      <div className="font-semibold text-indigo-900 mb-1 flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                    <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-100 text-xs text-emerald-950 leading-relaxed">
+                      <div className="font-semibold text-emerald-900 mb-1 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-emerald-600" />
                         Executive Copilot Briefing
                       </div>
                       {batchAiData.ai_summary}
@@ -664,7 +651,10 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const [aiReview, setAiReview] = useState(() => globalAiCache.get(exc.id) || null);
   const [loanData, setLoanData] = useState(null);
   const [loadingAi, setLoadingAi] = useState(() => !globalAiCache.has(exc.id));
-  const [correctedValue, setCorrectedValue] = useState(exc.suggested_value || exc.current_value || '');
+  
+  // Decoupled 3-state value model: human draft value is null until human action
+  const [draftValue, setDraftValue] = useState(null);
+  const [appliedFromAi, setAppliedFromAi] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -674,16 +664,14 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   // Fetch AI review & full loan details smoothly
   useEffect(() => {
     setSuggestionApplied(false);
-    setCorrectedValue(exc.suggested_value || exc.current_value || '');
+    setDraftValue(null);
+    setAppliedFromAi(false);
     setEditMode(false);
 
     if (globalAiCache.has(exc.id)) {
       const cached = globalAiCache.get(exc.id);
       setAiReview(cached);
       setLoadingAi(false);
-      if (cached.suggested_value !== null && cached.suggested_value !== undefined) {
-        setCorrectedValue(cached.suggested_value);
-      }
     } else {
       setLoadingAi(true);
       const token = localStorage.getItem('loanguard_token');
@@ -703,9 +691,6 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           if (d.success) {
             globalAiCache.set(exc.id, d.data);
             setAiReview(d.data);
-            if (d.data.suggested_value !== null && d.data.suggested_value !== undefined) {
-              setCorrectedValue(d.data.suggested_value);
-            }
           }
         })
         .catch(() => {})
@@ -722,19 +707,27 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
         if (d.success) setLoanData(d.data);
       })
       .catch(() => {});
-  }, [exc.id, exc.current_value, exc.loan_id, exc.suggested_value]);
+  }, [exc.id, exc.current_value, exc.loan_id]);
 
   const handleApplySuggestion = (val) => {
     if (val === null || val === undefined) return;
-    setCorrectedValue(val);
+    setDraftValue(val);
+    setAppliedFromAi(true);
     setNote(`Applied AI recommended value (${val}) per validation rule.`);
     setSuggestionApplied(true);
     setTimeout(() => setSuggestionApplied(false), 2500);
   };
 
+  const handleResetDraft = () => {
+    setDraftValue(null);
+    setAppliedFromAi(false);
+    setEditMode(false);
+  };
+
   const resolveAction = async (action) => {
     setBusy(true);
     try {
+      const finalValueToSend = draftValue !== null ? draftValue : (exc.suggested_value || exc.current_value);
       const token = localStorage.getItem('loanguard_token');
       const res = await fetch(`/api/exceptions/${exc.id}`, {
         method: 'PATCH',
@@ -744,8 +737,8 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
         },
         body: JSON.stringify({ 
           action, 
-          note: note || 'Resolved via Copilot interface', 
-          corrected_value: correctedValue 
+          note: note || (action === 'approve' ? 'Approved & verified by reviewer' : 'Rejected record due to policy violation'), 
+          corrected_value: finalValueToSend 
         })
       });
       const data = await res.json();
@@ -766,7 +759,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   };
 
   return (
-    <div className="saas-card p-0 flex flex-col h-full overflow-hidden border-slate-200/80 shadow-md bg-white">
+    <div className="saas-card p-0 flex flex-col h-full max-h-full overflow-hidden border-slate-200/80 shadow-md bg-white">
       
       {/* 1. Header Bar */}
       <div className="px-5 py-3 border-b border-slate-200/80 bg-white shrink-0">
@@ -803,7 +796,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
       </div>
 
       {/* 2. Scrollable Body Content */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0">
         
         {/* Validation Failure */}
         <div className="p-3.5 bg-rose-50/80 border border-rose-200/70 rounded-xl text-xs text-rose-900 flex items-start gap-3">
@@ -814,65 +807,91 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           </div>
         </div>
 
-        {/* Three-State Diff Inspector */}
-        <div className="grid grid-cols-3 gap-3 p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
-          {/* Source Value */}
-          <div className="flex flex-col">
+        {/* Structured Non-Overlapping Three-State Diff Inspector */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
+          
+          {/* 1. Source Value */}
+          <div className="flex flex-col justify-between min-w-0 bg-white p-2.5 rounded-lg border border-slate-200/60 shadow-2xs">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Source Value
+              1. Source Value ({exc.field})
             </span>
-            <div className="font-mono text-sm font-semibold text-rose-600 line-through decoration-rose-400 mt-1">
-              {exc.current_value || <span className="italic text-slate-400">Empty / Missing</span>}
+            <div className="font-mono text-xs font-semibold text-rose-600 line-through decoration-rose-400 my-1 truncate" title={exc.current_value || 'Empty / Missing'}>
+              {exc.current_value || <span className="italic text-slate-400 font-normal">Empty / Missing</span>}
             </div>
-            <span className="text-[10px] text-rose-500 mt-1 font-medium">Failed check</span>
+            <span className="text-[10px] text-rose-500 font-medium">Failed check</span>
           </div>
 
-          {/* AI Recommendation */}
-          <div className="flex flex-col border-l border-slate-200/80 pl-3">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              AI Recommendation
-              {suggestionApplied && <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">✓ Applied</span>}
+          {/* 2. AI Recommendation */}
+          <div className="flex flex-col justify-between min-w-0 bg-white p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+            <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider flex items-center justify-between">
+              <span>2. AI Suggestion</span>
+              {suggestionApplied && <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">✓ Loaded</span>}
             </span>
-            <div className="font-mono text-sm font-bold text-emerald-700 mt-1">
-              {correctedValue || <span className="text-slate-400 italic">Pending</span>}
+            <div className="font-mono text-xs font-bold text-emerald-700 my-1 truncate" title={aiReview?.suggested_value || 'Manual review required'}>
+              {aiReview?.suggested_value || <span className="text-slate-400 italic font-normal text-[11px]">Manual review required</span>}
             </div>
-            <span className="text-[10px] text-emerald-600 mt-1 font-medium">Canonical target</span>
+            <span className="text-[10px] text-emerald-600 font-medium">Candidate draft</span>
           </div>
 
-          {/* Final Human Value */}
-          <div className={`flex flex-col border-l border-slate-200/80 pl-3 transition-colors duration-200 ${editMode ? 'bg-amber-50/50 rounded-r-lg' : ''}`}>
+          {/* 3. Final Human Value */}
+          <div className={`flex flex-col justify-between min-w-0 bg-white p-2.5 rounded-lg border transition-all shadow-2xs ${draftValue !== null ? 'border-emerald-300 ring-1 ring-emerald-500/20' : 'border-slate-200/60'}`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                Final Human Value
+              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">
+                3. Final Human Value
               </span>
-              <button 
-                onClick={() => setEditMode(!editMode)}
-                className="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer"
-              >
-                <Edit3 className="w-2.5 h-2.5" />
-                <span>{editMode ? 'Done' : 'Edit'}</span>
-              </button>
+              <div className="flex items-center gap-1">
+                {draftValue !== null && (
+                  <button 
+                    onClick={handleResetDraft}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 font-medium cursor-pointer"
+                    title="Reset to pending"
+                  >
+                    Reset
+                  </button>
+                )}
+                <button 
+                  onClick={() => setEditMode(!editMode)}
+                  className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 cursor-pointer"
+                >
+                  <Edit3 className="w-2.5 h-2.5" />
+                  <span>{editMode ? 'Done' : 'Edit'}</span>
+                </button>
+              </div>
             </div>
-            <div className="mt-1">
+
+            <div className="my-1 min-w-0">
               {editMode ? (
                 <input 
                   type="text" 
-                  className="input-field font-mono text-xs text-emerald-800 bg-white py-1" 
-                  value={correctedValue} 
-                  onChange={e => setCorrectedValue(e.target.value)}
+                  className="w-full bg-slate-50 border border-emerald-400 rounded px-2 py-0.5 font-mono text-xs text-slate-900 focus:outline-none" 
+                  value={draftValue !== null ? draftValue : (exc.current_value || '')} 
+                  onChange={e => { setDraftValue(e.target.value); setAppliedFromAi(false); }}
                   autoFocus
                 />
               ) : (
                 <div 
                   onClick={() => setEditMode(true)}
-                  className="font-mono text-sm font-bold text-slate-800 cursor-text hover:bg-slate-100 px-1 py-0.5 rounded transition-colors"
+                  className="font-mono text-xs font-bold cursor-text truncate"
+                  title={draftValue !== null ? draftValue : 'Pending reviewer decision'}
                 >
-                  {correctedValue || <span className="text-amber-500 italic">⚠ Pending reviewer decision</span>}
+                  {draftValue !== null ? (
+                    <span className="text-slate-900">{draftValue}</span>
+                  ) : (
+                    <span className="text-slate-400 italic font-normal text-[11px]">Pending reviewer decision</span>
+                  )}
                 </div>
               )}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 font-medium">⚠ Requires confirmation</span>
+
+            <span className="text-[10px] font-medium truncate">
+              {draftValue !== null ? (
+                <span className="text-emerald-700 font-semibold">✓ {appliedFromAi ? 'Accepted AI Suggestion' : 'Human Override'}</span>
+              ) : (
+                <span className="text-amber-600">⚠ Requires confirmation</span>
+              )}
+            </span>
           </div>
+
         </div>
 
         {/* AI Diagnostics & Collateral Sub-Tabs Card */}
@@ -905,7 +924,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
             </div>
 
             {aiReview && activeSubTab === 'ai' && (
-              <div className="flex items-center gap-1.5 text-[11px] font-mono">
+              <div className="flex items-center gap-1.5 text-[11px] font-mono" title="Model confidence in proposed recommendation">
                 <span className="text-slate-500">Confidence:</span>
                 <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                   {Math.round(aiReview.confidence * 100)}%
@@ -943,14 +962,14 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
                       
                       {aiReview.suggested_value && (
                         <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-emerald-100 shadow-xs">
-                          <div className="text-xs text-slate-700">
+                          <div className="text-xs text-slate-700 min-w-0 pr-2">
                             <span className="text-slate-500">Suggested Value:</span>
-                            <span className="font-mono text-emerald-700 font-bold ml-1.5 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <span className="font-mono text-emerald-700 font-bold ml-1.5 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 truncate inline-block max-w-[180px] align-middle">
                               {aiReview.suggested_value}
                             </span>
                           </div>
                           <button 
-                            className={`text-[10px] py-1 px-3 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            className={`text-[10px] py-1 px-3 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                               suggestionApplied 
                                 ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20' 
                                 : 'btn-primary'
@@ -960,12 +979,12 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
                             {suggestionApplied ? (
                               <>
                                 <CheckCircle2 className="w-3 h-3 text-emerald-200" />
-                                <span>Applied!</span>
+                                <span>Applied to Draft!</span>
                               </>
                             ) : (
                               <>
                                 <Check className="w-3 h-3" />
-                                <span>Apply Suggestion</span>
+                                <span>Apply to Draft</span>
                               </>
                             )}
                           </button>
@@ -1022,10 +1041,10 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
       </div>
 
       {/* 3. Sticky Action Footer */}
-      <div className="p-4 bg-slate-50/95 border-t border-slate-200/90 shrink-0 space-y-3">
+      <div className="p-4 bg-slate-50/95 border-t border-slate-200 shrink-0 space-y-2.5">
         {/* Note Input & Presets */}
         <div>
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center justify-between mb-1">
             <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
               Reviewer Note (Audit Trail)
             </label>
@@ -1057,7 +1076,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           <input 
             type="text" 
             placeholder="e.g. Verified against promissory note. Rate adjusted to 4.25%." 
-            className="input-field text-xs bg-white py-2"
+            className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition-all shadow-2xs"
             value={note}
             onChange={e => setNote(e.target.value)}
           />
@@ -1075,7 +1094,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           </button>
 
           <button 
-            className="btn-primary text-xs py-2.5 px-4 flex-2 justify-center shadow-emerald-500/15 cursor-pointer" 
+            className="btn-primary text-xs py-2.5 px-4 flex-2 justify-center shadow-emerald-500/15 cursor-pointer disabled:opacity-50" 
             onClick={() => resolveAction('approve')} 
             disabled={busy}
           >
