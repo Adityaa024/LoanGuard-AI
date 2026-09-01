@@ -55,28 +55,10 @@ const USER_PROFILES = {
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return Boolean(localStorage.getItem('loanguard_token') && localStorage.getItem('loanguard_user'));
-  })
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('loanguard_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  })
-  const [activeTab, setActiveTab] = useState(() => {
-    try {
-      const saved = localStorage.getItem('loanguard_user');
-      if (saved) {
-        const u = JSON.parse(saved);
-        if (u.role === 'reviewer') return 'reviewer';
-        if (u.role === 'consumer') return 'consumer';
-      }
-    } catch {}
-    return 'operator';
-  })
+  // Always start on login page — require explicit authentication
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState(null)
+  const [activeTab, setActiveTab] = useState('operator')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showPolicyCatalog, setShowPolicyCatalog] = useState(false)
   const [sseConnected, setSseConnected] = useState(true)
