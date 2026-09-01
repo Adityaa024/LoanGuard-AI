@@ -24,6 +24,12 @@ export async function getDb() {
   })
 
   await dbInstance.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = NORMAL;
+    PRAGMA cache_size = -4000;
+    PRAGMA temp_store = MEMORY;
+    PRAGMA mmap_size = 16777216;
+
     CREATE TABLE IF NOT EXISTS upload_batches (
       id TEXT PRIMARY KEY,
       filename TEXT NOT NULL,

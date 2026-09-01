@@ -26,12 +26,18 @@ const meta = readJson(path.join(ROOT, 'data', 'meta.json'), { loanCount: 0, task
 
 // ---- Health & metadata -------------------------------------------------
 app.get('/health', (_req, res) => {
+  const mem = process.memoryUsage()
   res.json({
     ok: true,
     service: 'loanguard-ai',
     seeded: meta.loanCount > 0,
     loanCount: meta.loanCount,
     taskCount: meta.taskCount,
+    memory: {
+      rssMb: (mem.rss / 1024 / 1024).toFixed(1),
+      heapUsedMb: (mem.heapUsed / 1024 / 1024).toFixed(1),
+      heapTotalMb: (mem.heapTotal / 1024 / 1024).toFixed(1)
+    },
     time: new Date().toISOString(),
   })
 })
