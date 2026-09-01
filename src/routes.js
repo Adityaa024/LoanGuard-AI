@@ -920,7 +920,7 @@ export async function registerRoutes(app, { ROOT }) {
             const recordHash = crypto.createHash('sha256').update(canonicalString).digest('hex')
             await db.run(`
               UPDATE loans 
-              SET validation_status = 'valid', is_verified = 1, verified_at = CURRENT_TIMESTAMP, 
+              SET validation_status = 'verified', is_verified = 1, verified_at = CURRENT_TIMESTAMP, 
                   verified_by = ?, reviewer_decision = 'batch_approved', verified_hash = ?
               WHERE id = ?
             `, [req.user.name, recordHash, exc.loan_id])
@@ -953,7 +953,8 @@ export async function registerRoutes(app, { ROOT }) {
   app.patch('/api/exceptions/:id', requireRole(['reviewer', 'operator']), async (req, res) => {
     try {
       const { action, note, corrected_value } = req.body
-      if (!['resolve', 'reject', 'override', 'request_correction'].includes(action)) {
+      const effectiveAction = action === 'approve' ? 'resolve' : action
+      if (!['resolve', 'reject', 'override', 'request_correction'].includes(effectiveAction)) {
         return res.status(400).json({ success: false, error: 'Invalid action' })
       }
 

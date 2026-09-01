@@ -737,7 +737,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ 
-          action, 
+          action: action === 'approve' ? 'resolve' : action, 
           note: note || (action === 'approve' ? 'Approved & verified by reviewer' : 'Rejected record due to policy violation'), 
           corrected_value: finalValueToSend 
         })
