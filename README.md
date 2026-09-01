@@ -11,7 +11,7 @@ In private debt securitization, structured finance, and secondary loan trading, 
 
 **LoanGuard-AI** is an enterprise verification platform functioning as an automated quality gatekeeper, diagnostic copilot, and tamper-evident audit ledger:
 
-```
+```text
 ┌────────────────────────────────┐      ┌────────────────────────────────┐      ┌────────────────────────────────┐
 │      1. Ingestion & Gate       │ ---> │    2. AI Copilot Workbench     │ ---> │    3. Cryptographic Seal       │
 │  Fast streaming CSV ingestion  │      │  Deep diagnostics, confidence  │      │  Immutable SHA-256 digital     │
@@ -31,31 +31,31 @@ In private debt securitization, structured finance, and secondary loan trading, 
 
 ### 1. Data Operator — Ingestion Studio & Quality Score
 *Fast drag-and-drop CSV ingestion with pre-set test benchmarks, batch lineage tracking, and real-time compliance rate.*
-![Data Operator Dashboard](./docs/images/operator_dashboard.png)
+![Data Operator Dashboard](./docs/images/screenshot_1.png)
 
 ---
 
 ### 2. Warden Validation Policy Engine (12 Deterministic Rules)
 *Declarative policy catalog detailing mathematical invariants, date checks, interest corridors, and severity levels.*
-![Warden Policy Catalog](./docs/images/policy_catalog.png)
+![Warden Policy Catalog](./docs/images/screenshot_2.png)
 
 ---
 
 ### 3. Exception Reviewer — AI Copilot Workbench & Side-by-Side Diff
 *Split-screen queue with keyboard navigation (`J`/`K`), root cause diagnostic explainer, repair suggestions, and 1-click apply.*
-![Exception Reviewer Copilot](./docs/images/reviewer_copilot.png)
+![Exception Reviewer Copilot](./docs/images/screenshot_3.png)
 
 ---
 
 ### 4. Data Consumer — Canonical Verified Portfolio
 *Searchable, filterable ledger of verified loans with cryptographic SHA-256 digital seal badges and governed streaming CSV export.*
-![Canonical Verified Portfolio](./docs/images/consumer_portfolio.png)
+![Canonical Verified Portfolio](./docs/images/screenshot_4.png)
 
 ---
 
 ### 5. Cryptographic Proof & Tamper-Evident SHA-256 Lineage Modal
 *Auditable sequential block ledger verifying the complete lifecycle of a loan from raw ingestion to reviewer sign-off.*
-![Cryptographic Proof and Lineage](./docs/images/audit_proof.png)
+![Cryptographic Proof and Lineage](./docs/images/screenshot_5.png)
 
 ---
 
@@ -78,13 +78,13 @@ In private debt securitization, structured finance, and secondary loan trading, 
 
 ### High-Level Architecture Diagram
 
-```
-                              ┌──────────────────────────────────────────────┐
-                              │            React 18 + Tailwind SPA           │
-                              │ (Operator, Reviewer, Consumer, 3D Hive Views)│
-                              └──────────────────────┬───────────────────────┘
-                                                     │ JWT Authenticated HTTP & SSE
-                                                     ▼
+```text
+                               ┌──────────────────────────────────────────────┐
+                               │            React 18 + Tailwind SPA           │
+                               │ (Operator, Reviewer, Consumer, 3D Hive Views)│
+                               └──────────────────────┬───────────────────────┘
+                                                      │ JWT Authenticated HTTP & SSE
+                                                      ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                          Express.js REST API Backend                                       │
 ├──────────────────────────────┬──────────────────────────────┬──────────────────────────────────────────────┤
@@ -112,7 +112,7 @@ In private debt securitization, structured finance, and secondary loan trading, 
 
 ## 📂 Codebase Directory Map & Walkthrough
 
-```
+```text
 d:/intain/
 ├── src/                               # Backend Application Logic
 │   ├── server.js                      # Express server entry point, static asset serving, port configuration
@@ -157,11 +157,11 @@ d:/intain/
 │
 ├── docs/                              # Project Documentation & Assets
 │   └── images/                        # High-resolution application screenshots
-│       ├── operator_dashboard.png     # Data Operator Ingestion Hub
-│       ├── policy_catalog.png         # Warden Validation Policy Catalog
-│       ├── reviewer_copilot.png       # Exception Reviewer Workbench & AI Copilot
-│       ├── consumer_portfolio.png     # Canonical Verified Portfolio Ledger
-│       └── audit_proof.png            # Cryptographic SHA-256 Proof & Lineage
+│       ├── screenshot_1.png           # Data Operator Dashboard
+│       ├── screenshot_2.png           # Warden Policy Catalog
+│       ├── screenshot_3.png           # Exception Reviewer Copilot
+│       ├── screenshot_4.png           # Canonical Verified Portfolio
+│       └── screenshot_5.png           # Cryptographic Proof & Lineage
 │
 ├── data/                              # Sample Loan Tapes & Fixtures
 │   ├── loan_tape.csv                  # Clean baseline sample dataset
