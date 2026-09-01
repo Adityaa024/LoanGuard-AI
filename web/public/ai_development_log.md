@@ -311,6 +311,1381 @@ Verify AI controls:
 
 ---
 
+### Prompt 11: Production-Grade Screenshot-Driven UI/UX & Data-Integrity Refinement (Intain Full Stack Track)
+```text
+# ================================================================
+# LOANGUARD-AI — SCREENSHOT-DRIVEN UI/UX + DATA-INTEGRITY REFINEMENT
+# INTain FULL STACK TRACK
+# ================================================================
+
+You are a senior product designer, staff frontend engineer,
+staff backend engineer, data-quality engineer, AI safety engineer,
+and competition judge.
+
+You are working on the LoanGuard-AI repository.
+
+Your job is to inspect the CURRENT implementation and improve it
+based on the attached screenshots and the Intain Full Stack Track
+Problem Statement.
+
+IMPORTANT:
+
+Do NOT redesign the application randomly.
+
+Preserve the existing visual identity:
+- white/light enterprise fintech workspace
+- navy typography
+- emerald/green success accents
+- red critical states
+- subtle purple AI accents
+- rounded enterprise cards
+- dense but readable tables
+- premium, serious financial-operations aesthetic
+
+The goal is:
+
+CURRENT:
+Good-looking fintech dashboard
+
+TARGET:
+Production-looking institutional loan-data-verification console
+with trustworthy data semantics, crystal-clear workflow states,
+and competition-grade UX.
+
+============================================================
+SOURCE OF TRUTH
+============================================================
+
+Use the Intain Problem Statement as the functional source of truth.
+
+The product flow is:
+
+INGEST
+→ NORMALIZE
+→ VALIDATE
+→ EXCEPTION
+→ AI REVIEW
+→ HUMAN DECISION
+→ VERIFIED RECORD
+→ AUDIT / HASH
+→ API / EXPORT
+
+Required personas:
+1. Data Operator
+2. Reviewer
+3. Data Consumer
+
+The PS requires role-specific workflows, AI recommendation separate
+from human decision, verified records, audit trail, source lineage,
+record hashing, and APIs.
+
+IMPORTANT:
+Do not introduce structured-finance/securitization functionality
+as a central product concept. The challenge explicitly says
+structured-finance/securitization logic is out of scope.
+
+============================================================
+PHASE 1 — INSPECT BEFORE MODIFYING
+============================================================
+
+Before changing code:
+
+1. Inspect the entire frontend.
+2. Inspect the backend.
+3. Inspect data models.
+4. Inspect validation engine.
+5. Inspect dashboard aggregation logic.
+6. Inspect reviewer workflow.
+7. Inspect AI recommendation flow.
+8. Inspect verified-record flow.
+9. Inspect audit/hash implementation.
+10. Inspect role switching.
+11. Inspect the existing test suite.
+
+Find the exact source files responsible for:
+- operator dashboard
+- reviewer dashboard
+- consumer dashboard
+- KPI calculations
+- batch audit table
+- exception detail
+- AI recommendation panel
+- role selector
+- workflow state
+- verified records
+- audit trail
+
+Do not assume the screenshot reflects static HTML.
+Trace every visible number back to its backend/data source.
+
+============================================================
+PHASE 2 — CRITICAL DATA CONSISTENCY AUDIT
+============================================================
+
+THIS IS A HIGH-PRIORITY REQUIREMENT.
+
+The screenshots contain these visible values:
+
+Data Operator:
+TOTAL / CURRENT BATCH:
+73,060 records
+
+CLEAN & VALID:
+15,521
+
+OPEN EXCEPTIONS:
+58,078
+
+These numbers currently imply:
+
+15,521 + 58,078 = 73,599
+
+which does NOT equal 73,060.
+
+Investigate the root cause.
+
+Determine whether:
+- counts come from different datasets,
+- exceptions are overlapping,
+- records are double-counted,
+- a stale aggregate is displayed,
+- "current batch" is being mixed with portfolio-wide data,
+- dashboard counters are hard-coded,
+- rejected/duplicate records are being counted inconsistently.
+
+DO NOT merely change the displayed numbers.
+
+Fix the underlying source-of-truth aggregation.
+
+Every dashboard KPI MUST reconcile.
+
+For any dataset:
+
+TOTAL
+=
+VALID
++
+INVALID / EXCEPTION
++
+any explicitly defined third category
+
+If a record may belong to multiple exceptions, do NOT sum
+exception counts as record counts.
+
+Clearly distinguish:
+
+UNIQUE RECORDS
+vs
+TOTAL EXCEPTIONS
+
+Example:
+
+73,060 unique records
+58,078 affected records
+or
+58,078 validation exceptions
+
+Do not present these ambiguously.
+
+Add automated tests for this.
+
+============================================================
+PHASE 3 — OPERATOR DASHBOARD
+============================================================
+
+Review the Data Operator dashboard.
+
+Current visible concepts:
+- Data Quality
+- Clean & Valid
+- Open Exceptions
+- Ingest Loan Tape
+- Ingestion Lineage & Batch Audit
+- Quick Test Datasets
+- Exception Severity Breakdown
+- Policy Engine
+
+Fix the following:
+
+------------------------------------------------------------
+3.1 KPI DEFINITIONS
+------------------------------------------------------------
+
+Do NOT use ambiguous metrics.
+
+Use explicit labels:
+
+DATA QUALITY
+21%
+Portfolio / current-batch score
+
+RECORDS INGESTED
+73,060
+Unique records
+
+CLEAN & VALID
+X
+Records passing all required policies
+
+OPEN EXCEPTIONS
+Y
+Affected records awaiting review
+
+Where useful, also expose:
+
+TOTAL EXCEPTIONS
+Z
+Validation findings
+
+Do not mix:
+- affected records
+- exception instances
+- validation failures
+- unique loans
+
+without labeling them.
+
+------------------------------------------------------------
+3.2 QUALITY SCORE
+------------------------------------------------------------
+
+The current 21% score is visually confusing.
+
+Make clear whether it is:
+- current batch
+- full portfolio
+- validation pass rate
+- weighted quality score
+
+The UI must show the definition in secondary text or tooltip.
+
+Example:
+
+DATA QUALITY
+21%
+Current portfolio validation score
+
+If the score is derived from:
+valid / total
+
+show enough context to understand it.
+
+------------------------------------------------------------
+3.3 CLEAN & VALID CARD
+------------------------------------------------------------
+
+Do not let the green card imply the whole dataset is healthy.
+
+Use:
+
+CLEAN & VALID
+15,521
+Records passing all required policies
+
+If 15,521 is actually a count of unique clean records,
+make that explicit.
+
+------------------------------------------------------------
+3.4 OPEN EXCEPTIONS CARD
+------------------------------------------------------------
+
+Use:
+
+OPEN EXCEPTIONS
+58,078
+Affected records
+
+or whatever the actual correct metric is.
+
+Do not call it "anomalies" if these are reviewable exceptions
+unless terminology is consistent throughout the application.
+
+------------------------------------------------------------
+3.5 REMOVE SECURITIZATION LANGUAGE
+------------------------------------------------------------
+
+Do NOT use:
+
+"Run Securitization Pipeline"
+"Institutional Securitization Tape"
+"ready for securitization"
+
+Replace with:
+
+"Run Validation Pipeline"
+"Loan Tape CSV"
+"trusted downstream consumption"
+
+The product should clearly be about loan-data verification,
+not securitization.
+
+------------------------------------------------------------
+3.6 UPLOAD AREA
+------------------------------------------------------------
+
+Make the upload component show:
+
+Drop loan tape here
+CSV · Maximum 50 MB
+or Browse Files
+
+After selection:
+
+filename
+rows detected
+columns detected
+schema status
+parsing status
+normalization status
+validation status
+
+Example:
+
+loan_tape.csv
+5,000 rows
+
+✓ File parsed
+✓ Schema recognized
+● Validation pending
+
+Do not display "success" before processing actually completes.
+
+------------------------------------------------------------
+3.7 VALIDATION PIPELINE CTA
+------------------------------------------------------------
+
+Current:
+"Run Validation Pipeline"
+
+Keep this.
+
+But disable it when:
+- no file selected
+- invalid file
+- upload still processing
+
+Show loading state while running.
+
+Prevent double-click / duplicate pipeline execution.
+
+------------------------------------------------------------
+3.8 QUICK TEST DATASETS
+------------------------------------------------------------
+
+Current cards include:
+- Clean Tape
+- Adversarial
+- Large 3k Tape Stress & Torture
+
+Check naming consistency.
+
+If the actual generated dataset is 5,000 rows,
+do not call it "3k".
+
+Use exact dataset names/counts.
+
+Make test datasets clearly marked as:
+DEMO / TEST DATA
+
+not production data.
+
+------------------------------------------------------------
+3.9 EXCEPTION SEVERITY CHART
+------------------------------------------------------------
+
+Current screenshot shows:
+
+Critical 57,393
+High 585
+Medium 96
+Low 4
+
+These sum to 58,078.
+
+GOOD.
+
+Do NOT break this relationship.
+
+But clearly define whether these are:
+- exception instances
+or
+- affected records.
+
+Add hover/tooltips if needed.
+
+Ensure:
+dashboard total
+=
+sum of severity buckets
+
+when using exception-instance counts.
+
+Add an automated reconciliation test.
+
+------------------------------------------------------------
+3.10 INGESTION LINEAGE TABLE
+------------------------------------------------------------
+
+Current table columns are roughly:
+
+SOURCE
+RECORDS
+QUALITY
+EXCEPTIONS
+STATUS
+
+This is much better.
+
+Improve semantics.
+
+Example row:
+
+massive_loans.csv
+5,000 records
+0.1% quality
+4,996 exceptions
+4 valid
+Processed with Exceptions
+
+Do not use only:
+
+✓ Processed
+
+because this can imply the DATA is healthy.
+
+"Processed" only means ingestion succeeded.
+
+Use separate status concepts:
+
+INGESTION
+✓ Processed
+
+DATA QUALITY
+4 valid / 4,996 exceptions
+
+For example:
+
+Processed
+with Exceptions
+
+or two status indicators.
+
+------------------------------------------------------------
+3.11 BATCH DETAIL
+------------------------------------------------------------
+
+Clicking a batch must reveal:
+
+Batch ID
+Source file
+Uploaded by
+Timestamp
+Record count
+Valid count
+Exception count
+Quality score
+Validation status
+Source lineage
+Hash / integrity if applicable
+Policy execution summary
+
+Provide:
+
+View Exceptions
+View Audit
+Export
+
+------------------------------------------------------------
+3.12 DUPLICATE SYSTEM-UPLOADED ROWS
+------------------------------------------------------------
+
+The screenshot shows repeated:
+servicer_update.csv
+massive_loans.csv
+malicious_loans.csv
+
+Check whether these are:
+- legitimate separate batches
+- duplicate demo seeds
+- repeated uploads
+- stale records
+
+If they are separate batches, expose unique:
+Batch ID
+Timestamp
+Upload source
+
+If they are unintended duplicates, fix the seed/test data.
+
+Do not hide legitimate history.
+
+============================================================
+PHASE 4 — REVIEWER DASHBOARD
+============================================================
+
+The Reviewer UI is one of the most important screens.
+
+Preserve the current:
+- exception list
+- severity tabs
+- AI summary
+- inspector
+- AI diagnostics
+- reviewer note
+- approve/reject actions
+
+But fix semantic issues.
+
+------------------------------------------------------------
+4.1 PENDING VS TOTAL EXCEPTIONS
+------------------------------------------------------------
+
+Current:
+sidebar = 58,078
+review queue = 500 Pending Review
+
+Make explicit:
+
+58,078
+Total Exceptions
+
+500
+Pending Review
+
+Do not make these numbers appear contradictory.
+
+In page header:
+
+500 Pending Review
+
+In sidebar:
+58,078 Total Exceptions
+
+------------------------------------------------------------
+4.2 FILTERS
+------------------------------------------------------------
+
+Keep:
+
+ALL
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+Add status filtering:
+
+Pending
+In Review
+Resolved
+Rejected
+
+Allow combinations:
+
+Critical + Pending
+
+Do not modify filtering only visually.
+Backend filtering must be correct.
+
+------------------------------------------------------------
+4.3 EXCEPTION HEADER
+------------------------------------------------------------
+
+Current:
+
+LN_MSV_4074
+Critical
+1 of 500
+
+Good.
+
+Show:
+
+Loan ID
+Severity
+Rule
+Exception type
+Position in queue
+
+Example:
+
+LN_MSV_4074
+CRITICAL
+
+POL-DUP-001 · duplicate_loan
+
+1 / 500
+
+Keep navigation controls.
+
+------------------------------------------------------------
+4.4 WHY THIS FAILED
+------------------------------------------------------------
+
+The explanation MUST be grounded in actual data.
+
+Current AI text:
+
+"Duplicate or conflicting Primary Identifier detected...
+multi-servicer record collision."
+
+Do NOT infer "multi-servicer collision"
+unless source records actually prove it.
+
+For a duplicate ID, safe explanation:
+
+"Duplicate Loan ID detected: LN_MSV_4074.
+Another record in the active dataset uses the same loan_id."
+
+Only claim a source conflict if two source records actually conflict.
+
+AI explanations must not invent:
+- source systems
+- documents
+- policy facts
+- borrower details
+- causal explanations not present in evidence
+
+------------------------------------------------------------
+4.5 AI RECOMMENDATION FOR DUPLICATE IDS
+------------------------------------------------------------
+
+THIS IS CRITICAL.
+
+Do NOT automatically generate a new loan ID such as:
+
+LN_MSV_4074_remediated
+
+and imply that this is correct.
+
+A duplicate identifier does NOT necessarily mean:
+"create a new ID."
+
+The system does not know merely from duplication whether:
+- the first record is canonical,
+- the second record is duplicate,
+- one should be rejected,
+- source should be corrected,
+- versioned identifier is appropriate.
+
+Instead, represent AI output as a REVIEW RECOMMENDATION.
+
+Use:
+
+RECOMMENDED RESOLUTION
+
+Duplicate Loan ID detected.
+
+Possible resolutions:
+- Confirm canonical record
+- Mark as duplicate
+- Request source correction
+- Assign versioned identifier after reviewer confirmation
+
+If a concrete suggestion exists, label it:
+
+AI SUGGESTED VALUE
+
+Potential value:
+LN_MSV_4074_V2
+
+⚠ Requires reviewer confirmation
+
+Do not call it:
+"Canonical Target"
+
+unless the reviewer has actually established it as canonical.
+
+------------------------------------------------------------
+4.6 SOURCE / AI / HUMAN VALUE MODEL
+------------------------------------------------------------
+
+The UI MUST clearly distinguish three states:
+
+SOURCE VALUE
+LN_MSV_4074
+
+AI RECOMMENDATION
+Potential remediation
+
+FINAL HUMAN VALUE
+Pending reviewer decision
+
+DO NOT populate FINAL HUMAN VALUE with the AI suggestion
+before the reviewer accepts/edits it.
+
+Current screenshot shows:
+AI recommendation filled
+and final human value simultaneously showing the same
+remediated value.
+
+This is semantically wrong.
+
+Until accepted:
+
+FINAL HUMAN VALUE
+Pending
+
+After reviewer accepts:
+
+FINAL HUMAN VALUE
+LN_MSV_4074_V2
+
+Decision:
+Accepted AI recommendation
+
+After reviewer edits:
+
+FINAL HUMAN VALUE
+LN_MSV_4074_V3
+
+Decision:
+Reviewer-edited
+
+After reject:
+
+FINAL HUMAN VALUE
+Original retained / unresolved
+
+------------------------------------------------------------
+4.7 APPLY SUGGESTION
+------------------------------------------------------------
+
+"Apply Suggestion" must NOT mean "approve record."
+
+It should mean:
+
+Apply to review draft
+
+Then:
+
+Before
+Original value
+
+After
+Draft value
+
+State:
+Pending reviewer approval
+
+Actions:
+[Undo]
+[Edit]
+[Approve & Verify]
+
+The system must prevent:
+AI suggestion
+→ automatic verified status
+
+------------------------------------------------------------
+4.8 APPROVE & VERIFY
+------------------------------------------------------------
+
+Keep the action:
+
+Approve & Verify
+
+Do NOT use:
+
+Approve & Sign Off (SHA-256)
+
+Hash generation should be explained separately:
+
+"SHA-256 integrity record generated on approval"
+
+The button is a workflow decision.
+
+The hash is an integrity artifact.
+
+Do not conflate them.
+
+------------------------------------------------------------
+4.9 AI CONFIDENCE
+------------------------------------------------------------
+
+Current:
+94%
+
+Do not display high confidence as if AI were authoritative.
+
+Use:
+
+AI Confidence
+94%
+
+and small clarification:
+
+Model confidence in recommendation
+
+Do NOT imply:
+94% probability that the data is correct
+
+unless that is genuinely how the model metric is defined.
+
+------------------------------------------------------------
+4.10 AI BATCH SUMMARY
+------------------------------------------------------------
+
+Current button shows:
+
+493 critical
+5 high
+
+Good.
+
+Improve to:
+
+AI BATCH SUMMARY
+493 Critical
+5 High
+1 Medium
+1 Low
+
+and show:
+
+Top issue
+Distribution
+Recommended review priority
+
+Do not make this a generic chatbot.
+
+============================================================
+PHASE 5 — REVIEWER WORKFLOW STATE MODEL
+============================================================
+
+Implement/verify an explicit state machine:
+
+OPEN
+→ IN REVIEW
+→ AI SUGGESTED
+→ HUMAN EDIT / ACCEPT / REJECT
+→ APPROVED
+→ VERIFIED
+
+Alternative:
+
+OPEN
+→ REJECTED
+
+or:
+
+OPEN
+→ NEEDS CORRECTION
+
+No record should become VERIFIED merely because:
+- AI ran
+- suggestion applied
+- reviewer opened it
+- validation passed
+
+Verification must follow the correct human decision.
+
+============================================================
+PHASE 6 — CONSUMER DASHBOARD
+============================================================
+
+Current Consumer dashboard is strong.
+
+Preserve:
+
+- Verified Records
+- Verification Rate
+- Data Quality
+- Integrity Status
+- Trust Summary
+- Verification Health
+- Governed Export
+- JSON
+- API Docs
+
+------------------------------------------------------------
+6.1 CONSUMER IDENTITY
+------------------------------------------------------------
+
+When Consumer dashboard is active:
+
+top-right MUST say:
+
+Data Consumer
+
+Do not show:
+
+Reviewer
+
+while the page says:
+
+Data Consumer / Verified Portfolio & Audit
+
+The role identity and active dashboard must always match.
+
+If role switching exists, make it explicitly:
+
+Switch Persona
+or
+Demo Role Switcher
+
+------------------------------------------------------------
+6.2 REMOVE SECURITIZATION WORDING
+------------------------------------------------------------
+
+Use:
+
+"Immutable, verified loan records ready for trusted downstream consumption."
+
+Do NOT mention:
+"ready for securitization"
+
+------------------------------------------------------------
+6.3 VERIFIED RECORDS CARD
+------------------------------------------------------------
+
+Current:
+
+18
+18 verified · All passed required policies
+
+Good.
+
+Ensure wording is accurate.
+
+If these are unique verified records:
+
+18 verified records
+
+------------------------------------------------------------
+6.4 VERIFICATION RATE
+------------------------------------------------------------
+
+100% is acceptable if:
+
+18 / 18 records reviewed and approved.
+
+Make the denominator visible when useful.
+
+Example:
+
+100%
+18 / 18 reviewer-approved
+
+------------------------------------------------------------
+6.5 DATA QUALITY VS VERIFICATION RATE
+------------------------------------------------------------
+
+Current:
+
+Verification Rate = 100%
+Data Quality = 21%
+
+This may confuse users.
+
+Add secondary descriptions:
+
+VERIFICATION RATE
+100%
+18 / 18 verified
+
+DATA QUALITY
+21%
+Portfolio-wide validation score
+
+This makes the two metrics intentionally different.
+
+------------------------------------------------------------
+6.6 INTEGRITY STATUS
+------------------------------------------------------------
+
+Keep:
+
+✓ VERIFIED
+SHA-256 chain intact
+
+Make it interactive if backend supports it:
+
+[Verify Ledger]
+
+Then report:
+
+✓ Chain valid
+✓ No modified records
+✓ Lineage intact
+✓ Audit events complete
+
+Do not claim integrity is verified unless an actual verification
+operation is executed.
+
+------------------------------------------------------------
+6.7 TRUST SUMMARY
+------------------------------------------------------------
+
+Current design is good:
+
+Validation passed
+Human review complete
+Source lineage intact
+Audit chain valid
+
+Keep it.
+
+But every status must be backed by actual data.
+
+For example:
+
+"Human review complete"
+must only appear if all displayed verified records actually
+have reviewer decisions.
+
+------------------------------------------------------------
+6.8 VERIFICATION HEALTH
+------------------------------------------------------------
+
+Good structure.
+
+Ensure:
+
+Verified + Pending + Rejected
+
+matches the underlying verified-record lifecycle.
+
+============================================================
+PHASE 7 — ROLE SWITCHING
+============================================================
+
+Implement one-login demo convenience WITHOUT destroying role semantics.
+
+Top-right:
+
+Aditya
+Data Operator
+Switch Persona ▾
+
+Options:
+
+Data Operator
+Reviewer
+Data Consumer
+
+When persona changes:
+- dashboard changes
+- page title changes
+- role label changes
+- permissions change
+
+Clearly mark this as a DEMO ROLE SWITCHER if this is not a true
+multi-role account architecture.
+
+Do not fake server-side RBAC by simply hiding UI buttons.
+
+============================================================
+PHASE 8 — RESPONSIVE / VISUAL ISSUES
+============================================================
+
+The screenshots reveal some layout clipping.
+
+Fix:
+
+1. Reviewer header:
+Rule badge and "1 of 500" must not collide.
+
+2. Reviewer:
+AI recommendation / final human value columns must not overlap.
+
+3. Long IDs must truncate elegantly with tooltip.
+
+4. AI recommendation must wrap cleanly.
+
+5. Rule labels like POL-DUP-001 must remain readable.
+
+6. Right-side inspector must scroll internally without obscuring
+bottom action bar.
+
+7. Bottom action bar must remain visible.
+
+8. Table columns must preserve alignment.
+
+9. Do not allow horizontal overflow unless intentionally designed.
+
+10. Ensure page doesn't become visually compressed at normal
+laptop resolution.
+
+Target at least:
+1440x900
+1366x768
+
+============================================================
+PHASE 9 — TERMINOLOGY CONSISTENCY
+============================================================
+
+Use one vocabulary across entire app.
+
+Prefer:
+
+Loan Tape
+Validation
+Exception
+Review
+AI Recommendation
+Human Decision
+Verified Record
+Audit Trail
+Source Lineage
+Data Quality
+Integrity
+
+Avoid mixing:
+
+Securitization
+Compliance
+Anomalies
+Verified
+Processed
+Canonical Target
+
+unless these have precise definitions.
+
+Especially distinguish:
+
+PROCESSED
+= ingestion succeeded
+
+VALIDATED
+= policies executed
+
+EXCEPTION
+= one or more issues found
+
+VERIFIED
+= human decision complete and trusted record created
+
+============================================================
+PHASE 10 — DATA / UI SOURCE-OF-TRUTH
+============================================================
+
+Audit ALL visible dashboard metrics.
+
+For every number:
+
+UI
+↓
+API
+↓
+service calculation
+↓
+database
+
+Trace the origin.
+
+No hard-coded:
+- 21%
+- 73,060
+- 58,078
+- 18
+- 493
+- 57,393
+unless these are genuinely seeded database values.
+
+Seed data is okay.
+
+Hard-coded UI metrics are NOT okay.
+
+============================================================
+PHASE 11 — TEST CASES TO ADD
+============================================================
+
+Add regression tests for:
+
+TEST-001
+Total records reconcile with valid + affected records.
+
+TEST-002
+Severity counts reconcile with total exception instances.
+
+TEST-003
+No dashboard KPI can disagree with API data.
+
+TEST-004
+AI suggestion cannot become final human value automatically.
+
+TEST-005
+Final human value remains Pending until human action.
+
+TEST-006
+AI-generated loan IDs are not treated as canonical automatically.
+
+TEST-007
+AI explanation cannot claim source conflict without evidence.
+
+TEST-008
+Approve & Verify creates verified record only after human action.
+
+TEST-009
+Audit event is created for AI recommendation.
+
+TEST-010
+Audit event is created for human edit.
+
+TEST-011
+Audit event is created for human approval.
+
+TEST-012
+Reject does not create a verified record.
+
+TEST-013
+Consumer cannot modify verified records.
+
+TEST-014
+Role switch updates dashboard + permissions.
+
+TEST-015
+Operator/Reviwer/Consumer labels always match active persona.
+
+TEST-016
+Repeated button clicks do not create duplicate verification.
+
+TEST-017
+Two reviewers cannot corrupt the same record.
+
+TEST-018
+Source lineage remains attached after verification.
+
+TEST-019
+Hash changes if canonical record changes.
+
+TEST-020
+Audit integrity verification detects changed events.
+
+============================================================
+PHASE 12 — FINAL VISUAL CHECK
+============================================================
+
+After modifications, compare the three main views:
+
+1. DATA OPERATOR
+2. EXCEPTION REVIEWER
+3. DATA CONSUMER
+
+They must feel like ONE coherent product.
+
+Operator:
+"Get trustworthy data into the system."
+
+Reviewer:
+"Resolve uncertainty with AI + human judgment."
+
+Consumer:
+"Consume and verify trusted data."
+
+Keep:
+- same typography
+- same spacing system
+- same status colors
+- same card language
+- same table conventions
+- same header pattern
+
+============================================================
+PHASE 13 — DO NOT OVERDESIGN
+============================================================
+
+Do NOT:
+- add unnecessary 3D
+- add giant charts
+- add crypto-style neon UI
+- add excessive glassmorphism
+- add random animations
+- make tables less dense
+- turn the product into a generic banking dashboard
+
+The current visual direction is already good.
+
+Improve:
+clarity
+trust
+hierarchy
+state visibility
+data semantics
+workflow correctness
+
+============================================================
+PHASE 14 — FINAL DELIVERABLE
+============================================================
+
+After implementing fixes, produce:
+
+QA_UI_REVIEW.md
+
+with:
+
+1. Issues found
+2. Root cause
+3. Fix applied
+4. Before/after behavior
+5. Tests added
+6. Remaining issues
+
+Use severity:
+
+P0 = data corruption / false verification / AI silent mutation
+P1 = major workflow/data inconsistency
+P2 = important UX/logic issue
+P3 = minor UI issue
+
+Also provide:
+
+# FINAL SCORE
+
+Operator UI: /10
+Reviewer UI: /10
+Consumer UI: /10
+Data integrity: /10
+AI trustworthiness: /10
+Role architecture: /10
+Overall: /10
+
+============================================================
+NON-NEGOTIABLE
+============================================================
+
+Do NOT just edit CSS.
+
+Do NOT just make screenshots look prettier.
+
+For every visible number, inspect its source.
+
+For every AI recommendation, inspect the actual workflow.
+
+For every role, inspect actual permissions.
+
+For every verified record, inspect database state.
+
+For every audit claim, inspect actual audit records.
+
+The goal is:
+
+LOOKS GREAT
++
+DATA IS CONSISTENT
++
+AI IS TRUSTWORTHY
++
+HUMAN DECISION IS EXPLICIT
++
+ROLES ARE REAL
++
+AUDIT IS REAL
++
+INTAIN PS IS ACTUALLY SATISFIED
+
+Do the audit first.
+
+Then implement fixes.
+
+Then run regression tests.
+
+Then report what remains.
+```
+
+---
+
 ## 4. Human Review Process & Quality Gates
 
 All AI-generated code and architectural modules were subjected to a rigorous four-stage review pipeline before production deployment:
