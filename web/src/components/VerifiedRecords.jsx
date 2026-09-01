@@ -300,48 +300,50 @@ export default function VerifiedRecords() {
       </div>
 
       {/* Stats KPI Overview - 4 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="saas-card p-4 flex items-center justify-between border-emerald-200/50 bg-emerald-50/20">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="saas-card p-3.5 flex items-center justify-between border-emerald-200/50 bg-emerald-50/20">
           <div>
-            <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Verified Records</div>
+            <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Verified Records</div>
             <div className="text-2xl font-bold text-emerald-900 font-mono mt-0.5">
               {loans.length.toLocaleString()}
             </div>
-            <div className="text-[11px] text-emerald-600 mt-0.5">{loans.length} verified · All passed required policies</div>
+            <div className="text-[10px] text-emerald-600 mt-0.5">{loans.length} verified · 100% pass rate</div>
           </div>
-          <div className="p-3 bg-emerald-100/80 text-emerald-700 rounded-xl">
+          <div className="p-2.5 bg-emerald-100/80 text-emerald-700 rounded-xl">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="saas-card p-4 flex items-center justify-between">
+        <div className="saas-card p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Verification Rate</div>
-            <div className="text-2xl font-bold text-slate-900 font-mono mt-0.5">100%</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Human-reviewed & approved</div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Portfolio Balance</div>
+            <div className="text-2xl font-bold text-slate-900 font-mono mt-0.5">
+              ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Canonical verified principal</div>
           </div>
-          <div className="p-3 bg-slate-100 text-slate-600 rounded-xl">
+          <div className="p-2.5 bg-slate-100 text-slate-600 rounded-xl">
             <FileCheck className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="saas-card p-4 flex items-center justify-between">
+        <div className="saas-card p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Data Quality</div>
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Data Quality</div>
             <div className="text-2xl font-bold text-slate-900 font-mono mt-0.5">
               {summary?.data_quality_score || 100}%
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Portfolio-wide score</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Portfolio-wide score</div>
           </div>
-          <div className="p-3 bg-slate-100 text-slate-600 rounded-xl">
+          <div className="p-2.5 bg-slate-100 text-slate-600 rounded-xl">
             <Database className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="saas-card p-4 flex items-center justify-between border-emerald-200/40">
+        <div className="saas-card p-3.5 flex items-center justify-between border-emerald-200/40">
           <div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Integrity Status</span>
+              <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Integrity Status</span>
               <button
                 onClick={handleVerifyLedger}
                 disabled={verifyingLedger}
@@ -354,78 +356,42 @@ export default function VerifiedRecords() {
             <div className="text-2xl font-bold text-emerald-800 font-mono mt-0.5 flex items-center gap-1.5">
               <span>✓ VERIFIED</span>
             </div>
-            <div className="text-[11px] text-emerald-600 mt-0.5">SHA-256 chain intact</div>
+            <div className="text-[10px] text-emerald-600 mt-0.5">SHA-256 chain intact</div>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl">
+          <div className="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl">
             <Lock className="w-5 h-5" />
           </div>
         </div>
       </div>
 
-      {/* Trust Summary + Verification Health (replaces geography chart) */}
-      {loans.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Trust Summary */}
-          <div className="saas-card p-5">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Trust Summary</div>
-            <div className="space-y-2.5">
-              {[
-                { label: 'Validation passed', detail: '12 policy rules executed', ok: true },
-                { label: 'Human review complete', detail: 'All records reviewer-approved', ok: true },
-                { label: 'Source lineage intact', detail: 'End-to-end provenance chain', ok: true },
-                { label: 'Audit chain valid', detail: 'SHA-256 Merkle integrity', ok: true },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/50">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${item.ok ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {item.ok ? '✓' : '!'}
-                    </span>
-                    <span className="text-xs font-semibold text-slate-800">{item.label}</span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-medium">{item.detail}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Verification Health */}
-          <div className="saas-card p-5">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">Verification Health</div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Verified</span>
-                <span className="font-mono font-bold text-emerald-700">{loans.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Pending</span>
-                <span className="font-mono font-bold text-slate-400">0</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Rejected</span>
-                <span className="font-mono font-bold text-slate-400">0</span>
-              </div>
-              <div className="pt-2 border-t border-slate-100">
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                  <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: '100%' }}></div>
-                </div>
-                <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[10px] text-slate-400">Verification progress</span>
-                  <span className="text-[10px] font-bold text-emerald-700">100%</span>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-slate-100">
-                <div className="text-[10px] font-bold text-slate-500 uppercase mb-1.5">Total Portfolio Balance</div>
-                <div className="text-lg font-bold text-slate-900 font-mono">
-                  ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Governance & Trust Lineage Strip */}
+      <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-emerald-200/70 bg-emerald-50/40 text-xs flex-wrap gap-2 shadow-2xs">
+        <div className="flex items-center gap-2 font-bold text-emerald-950 text-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>Trust & Lineage Verification:</span>
         </div>
-      )}
+        <div className="flex items-center gap-3.5 flex-wrap text-[11px] font-medium text-emerald-900">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            12 Policies Passed
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Reviewer Approved ({loans.length}/{loans.length})
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Source Lineage Intact
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            SHA-256 Merkle Chain Valid
+          </span>
+        </div>
+      </div>
 
       {/* Search & Filter Table Bar */}
-      <div className="saas-card p-0 flex-1 overflow-hidden flex flex-col">
+      <div className="saas-card p-0 flex-1 overflow-hidden flex flex-col min-h-[380px]">
         
         <div className="p-3.5 border-b border-slate-200/80 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1 flex-wrap">
