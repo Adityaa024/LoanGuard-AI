@@ -38,12 +38,101 @@ export class LocalPolicyEngine {
     this.rules = this.policy.rules
     this.timezone = this.policy.timezone || 'UTC'
     this.authoredRules = []
+
+    // Load validation_rules.json as first-class policy configuration
+    try {
+      const jsonRulesPath = path.resolve(this.policyDir, '..', 'data', 'validation_rules.json')
+      if (fs.existsSync(jsonRulesPath)) {
+        const jsonContent = JSON.parse(fs.readFileSync(jsonRulesPath, 'utf8'))
+        this.jsonRules = jsonContent.rules || []
+        // Pre-load active authored rules from validation_rules.json
+        for (const jr of this.jsonRules) {
+          if (jr.custom || jr.id.startsWith('POL-CUSTOM') || jr.id.startsWith('POL-RATE-CAP')) {
+            this.authoredRules.push({
+              id: jr.id,
+              name: jr.name,
+              description: jr.description,
+              severity: jr.severity || 'high',
+              field: Array.isArray(jr.fields) ? jr.fields[0] : (jr.field || 'interest_rate'),
+              operator: jr.operator || (jr.max !== undefined ? '>' : '=='),
+              value: jr.value !== undefined ? jr.value : (jr.max !== undefined ? jr.max : 0),
+              is_active: true
+            })
+          }
+        }
+      } else {
+        this.jsonRules = []
+      }
+    } catch (e) {
+      this.jsonRules = []
+    }
   }
 
   addRule(rule, { persist = true } = {}) {
     this.authoredRules = this.authoredRules.filter((r) => r.id !== rule.id)
-    this.authoredRules.push(rule)
-    return rule
+    const normalized = {
+      id: rule.id || `POL-CUSTOM-${Date.now()}`,
+      name: rule.name || 'Custom Policy Rule',
+      description: rule.description || '',
+      severity: rule.severity || 'high',
+      field: rule.field || 'interest_rate',
+      operator: rule.operator || '>',
+      value: rule.value !== undefined ? rule.value : 0,
+      is_active: rule.is_active !== false,
+      custom: true
+    }
+    this.authoredRules.push(normalized)
+
+    if (persist) {
+      try {
+        const jsonRulesPath = path.resolve(this.policyDir, '..', 'data', 'validation_rules.json')
+        let dataObj = { rules: [] }
+        if (fs.existsSync(jsonRulesPath)) {
+          dataObj = JSON.parse(fs.readFileSync(jsonRulesPath, 'utf8'))
+        }
+        dataObj.rules = (dataObj.rules || []).filter(r => r.id !== normalized.id)
+        dataObj.rules.push({
+          id: normalized.id,
+          name: normalized.name,
+          description: normalized.description,
+          severity: normalized.severity,
+          type: 'custom_dynamic',
+          fields: [normalized.field],
+          operator: normalized.operator,
+          value: normalized.value,
+          custom: true,
+          activated_at: new Date().toISOString()
+        })
+        fs.writeFileSync(jsonRulesPath, JSON.stringify(dataObj, null, 2), 'utf8')
+      } catch (err) {
+        console.error('[LocalPolicyEngine] Failed to persist rule to validation_rules.json:', err.message)
+      }
+    }
+    return normalized
+  }
+
+  getAllRules() {
+    const builtinList = Object.entries(this.rules || {}).map(([key, val]) => ({
+      id: val.id || key,
+      key,
+      name: key.replace(/_/g, ' ').toUpperCase(),
+      severity: val.severity || 'medium',
+      description: val.description || 'Builtin underwriting rule',
+      category: 'builtin'
+    }))
+    const jsonList = (this.jsonRules || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      severity: r.severity || 'high',
+      description: r.description,
+      fields: r.fields || [r.field],
+      category: r.custom ? 'custom_active' : 'statutory_dataset'
+    }))
+    return {
+      builtin: builtinList,
+      dataset_rules: jsonList,
+      active_authored: this.authoredRules
+    }
   }
 
   isAppealable(rule) {
@@ -301,18 +390,35 @@ export class LocalPolicyEngine {
         const txt = (action.text || '').toLowerCase()
         if (rule.params.phrases.some(p => txt.includes(p.toLowerCase()))) violation = true
       }
-      else if (rule.kind === 'contact_hours') {
-        const hr = now.getUTCHours()
-        if (hr < rule.params.startHour || hr >= rule.params.endHour) violation = true
+      else if (rule.field && action.record) {
+        const val = action.record[rule.field]
+        const numVal = parseFloat(val)
+        const targetNum = parseFloat(rule.value)
+
+        if (rule.operator === '>' && !isNaN(numVal) && !isNaN(targetNum)) {
+          if (numVal > targetNum) violation = true
+        } else if (rule.operator === '>=' && !isNaN(numVal) && !isNaN(targetNum)) {
+          if (numVal >= targetNum) violation = true
+        } else if (rule.operator === '<' && !isNaN(numVal) && !isNaN(targetNum)) {
+          if (numVal < targetNum) violation = true
+        } else if (rule.operator === '<=' && !isNaN(numVal) && !isNaN(targetNum)) {
+          if (numVal <= targetNum) violation = true
+        } else if (rule.operator === '==' || rule.operator === '=') {
+          if (String(val) === String(rule.value)) violation = true
+        } else if (rule.operator === '!=') {
+          if (String(val) !== String(rule.value)) violation = true
+        }
       }
 
       if (violation) {
         checks.push({
-          outcome: rule.onViolation === 'deny' ? DECISION.DENY : DECISION.ESCALATE,
-          escalated: rule.onViolation.includes('escalate'),
+          outcome: (rule.onViolation === 'deny' || rule.severity === 'critical') ? DECISION.DENY : DECISION.ESCALATE,
+          escalated: true,
           policyId: rule.id,
-          rule: rule.kind,
-          reason: rule.description,
+          rule: rule.name || rule.kind || 'dynamic_policy_violation',
+          reason: rule.description || `${rule.field} (${action.record?.[rule.field]}) violates rule ${rule.operator} ${rule.value}`,
+          field: rule.field || 'loan_id',
+          severity: rule.severity || 'high',
           category: 'authored'
         })
       }

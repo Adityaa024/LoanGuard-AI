@@ -66,8 +66,24 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(staticDir, 'index.html'))
 })
 
-const PORT = process.env.PORT || 8080
-app.listen(PORT, () => {
-  console.log(`LoanGuard-AI listening on :${PORT} — serving ${staticDir === webDist ? 'web/dist' : 'public (placeholder)'}`)
-  console.log(`  seeded: ${meta.loanCount} loans, ${meta.taskCount} tasks`)
-})
+let currentPort = parseInt(process.env.PORT || '8080', 10)
+const maxPortRetries = 5
+
+function startServer(port, retriesLeft) {
+  const server = app.listen(port, () => {
+    console.log(`LoanGuard-AI listening on :${port} — serving ${staticDir === webDist ? 'web/dist' : 'public (placeholder)'}`)
+    console.log(`  seeded: ${meta.loanCount} loans, ${meta.taskCount} tasks`)
+  })
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && retriesLeft > 0) {
+      console.warn(`[server] Port ${port} is occupied. Retrying automatically on fallback port ${port + 1}...`)
+      startServer(port + 1, retriesLeft - 1)
+    } else {
+      console.error(`[server] Fatal startup failure: ${err.message}`)
+      process.exit(1)
+    }
+  })
+}
+
+startServer(currentPort, maxPortRetries)

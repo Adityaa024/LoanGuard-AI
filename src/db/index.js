@@ -106,6 +106,71 @@ export async function getDb() {
       hash TEXT,
       details TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS document_manifest (
+      id TEXT PRIMARY KEY,
+      upload_batch_id TEXT,
+      loan_id TEXT NOT NULL,
+      document_type TEXT NOT NULL,
+      document_status TEXT NOT NULL,
+      uploaded_at TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS servicer_updates (
+      id TEXT PRIMARY KEY,
+      upload_batch_id TEXT,
+      loan_id TEXT NOT NULL,
+      current_balance REAL,
+      payment_status TEXT,
+      borrower_name TEXT,
+      source_system TEXT,
+      discrepancy_amount REAL DEFAULT 0,
+      reconciliation_status TEXT DEFAULT 'pending',
+      uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS import_reports (
+      batch_id TEXT PRIMARY KEY,
+      source_type TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      total_rows INTEGER DEFAULT 0,
+      clean_rows INTEGER DEFAULT 0,
+      affected_rows INTEGER DEFAULT 0,
+      failed_rows_json TEXT,
+      uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS ai_prompt_logs (
+      id TEXT PRIMARY KEY,
+      exception_id TEXT,
+      loan_id TEXT,
+      agent_id TEXT,
+      model TEXT,
+      system_prompt TEXT,
+      user_prompt TEXT,
+      raw_response TEXT,
+      confidence REAL,
+      suggested_value TEXT,
+      latency_ms INTEGER,
+      tokens_used INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS dynamic_rules (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      severity TEXT DEFAULT 'high',
+      rule_kind TEXT,
+      field TEXT,
+      operator TEXT,
+      value TEXT,
+      on_violation TEXT DEFAULT 'escalate',
+      is_active BOOLEAN DEFAULT 1,
+      created_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `)
 
   // Run schema column migrations for existing SQLite databases
@@ -152,6 +217,9 @@ export async function getDb() {
     CREATE INDEX IF NOT EXISTS idx_loans_validation_status ON loans(validation_status);
     CREATE INDEX IF NOT EXISTS idx_loans_upload_batch ON loans(upload_batch_id);
     CREATE INDEX IF NOT EXISTS idx_audit_loan_id ON audit_logs(loanId);
+    CREATE INDEX IF NOT EXISTS idx_doc_manifest_loan_id ON document_manifest(loan_id);
+    CREATE INDEX IF NOT EXISTS idx_servicer_loan_id ON servicer_updates(loan_id);
+    CREATE INDEX IF NOT EXISTS idx_dynamic_rules_active ON dynamic_rules(is_active);
   `)
 
   return dbInstance

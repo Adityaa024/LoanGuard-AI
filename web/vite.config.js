@@ -7,7 +7,20 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: './',
-  build: { outDir: 'dist', emptyOutDir: true },
+  build: { 
+    outDir: 'dist', 
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          icons: ['lucide-react'],
+          animations: ['framer-motion']
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     proxy: {

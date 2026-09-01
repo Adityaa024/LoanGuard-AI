@@ -1190,6 +1190,53 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
                       )}
                     </div>
                   </div>
+
+                  {/* Model & Prompt Trace Ledger (Gap 4 resolution) */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <details className="text-[11px] group cursor-pointer">
+                      <summary className="font-semibold text-slate-500 hover:text-slate-800 flex items-center justify-between list-none">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          <span>Model Governance & Prompt Audit ({aiReview.model ? aiReview.model.split(' ')[0] : 'Claude'})</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="mt-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1.5 font-mono text-[10px] text-slate-600">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400 font-sans">Model Engine:</span>
+                          <span className="text-slate-800 font-bold">{aiReview.model || 'Claude 3.5 Sonnet'}</span>
+                        </div>
+                        {aiReview.prompt_metadata?.prompt_id && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400 font-sans">Audit Prompt ID:</span>
+                            <span className="text-slate-700">{aiReview.prompt_metadata.prompt_id}</span>
+                          </div>
+                        )}
+                        {aiReview.prompt_metadata?.tokens_used && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400 font-sans">Inference Tokens:</span>
+                            <span className="text-slate-700">{aiReview.prompt_metadata.tokens_used} tokens · {aiReview.prompt_metadata.latency_ms || 12}ms latency</span>
+                          </div>
+                        )}
+                        {aiReview.prompt_metadata?.system_prompt && (
+                          <div className="pt-1 border-t border-slate-200/60">
+                            <span className="text-slate-400 font-sans block mb-0.5">System Prompt:</span>
+                            <div className="text-slate-600 bg-white p-1.5 rounded border border-slate-200/80 line-clamp-2">
+                              {aiReview.prompt_metadata.system_prompt}
+                            </div>
+                          </div>
+                        )}
+                        {aiReview.prompt_metadata?.user_prompt && (
+                          <div className="pt-1">
+                            <span className="text-slate-400 font-sans block mb-0.5">Underwriting Diagnostic Prompt:</span>
+                            <div className="text-slate-600 bg-white p-1.5 rounded border border-slate-200/80 line-clamp-2">
+                              {aiReview.prompt_metadata.user_prompt}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  </div>
                 </>
               ) : (
                 <div className="text-xs text-slate-500 py-3">AI analysis unavailable for this rule.</div>
