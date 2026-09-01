@@ -1,12 +1,42 @@
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 
 const BASE_URL = 'http://localhost:8080';
 
+async function ensureServerRunning() {
+  try {
+    const res = await fetch(`${BASE_URL}/`);
+    if (res.status < 500) return null;
+  } catch {}
+
+  console.log('⚡ Starting LoanGuard-AI server on port 8080 for testing...');
+  const serverProcess = spawn('node', ['src/server.js'], {
+    cwd: path.resolve(__dirname, '..'),
+    stdio: 'ignore',
+    detached: false
+  });
+
+  const start = Date.now();
+  while (Date.now() - start < 10000) {
+    try {
+      const res = await fetch(`${BASE_URL}/api/health`);
+      if (res.ok) {
+        console.log('✅ Server online and ready for testing.\n');
+        return serverProcess;
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 400));
+  }
+  throw new Error('Timed out waiting for server to start on port 8080');
+}
+
 async function runQaTests() {
-  console.log('====================================================');
-  console.log('🧪 LOANGUARD-AI — MULTI-CSV INGESTION & QUALITY TEST');
-  console.log('====================================================\n');
+  const spawnedServer = await ensureServerRunning();
+  try {
+    console.log('====================================================');
+    console.log('🧪 LOANGUARD-AI — MULTI-CSV INGESTION & QUALITY TEST');
+    console.log('====================================================\n');
 
   // 1. Authenticate Personas
   console.log('🔑 Authenticating Demo Personas...');
@@ -252,6 +282,11 @@ async function runQaTests() {
   console.log(allPass ? '🎉 ALL CSV UPLOAD & GOVERNANCE TESTS PASSED 100%' : '⚠️ SOME TESTS REPORTED ANOMALIES');
   console.log('====================================================\n');
   if (!allPass) process.exit(1);
+  } finally {
+    if (spawnedServer) {
+      try { spawnedServer.kill(); } catch {}
+    }
+  }
 }
 
 runQaTests().catch(err => {

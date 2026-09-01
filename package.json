@@ -14,7 +14,7 @@
     "build:web": "npm --prefix web install --include=dev && npm --prefix web run build",
     "build": "npm --prefix web install --include=dev && npm --prefix web run build",
     "postinstall": "node data/generate.js || true",
-    "test": "node scripts/test_all_csv_uploads.cjs"
+    "test": "node --test test/reconciliation_and_integrity.test.js && node scripts/test_all_csv_uploads.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

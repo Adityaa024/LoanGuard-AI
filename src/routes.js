@@ -65,6 +65,11 @@ function requireRole(allowedRoles) {
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } })
 
 export async function registerRoutes(app, { ROOT }) {
+  // ---- Health Check ----
+  app.get('/api/health', (req, res) => {
+    res.json({ success: true, status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() })
+  })
+
   // ---- Authentication ----
   app.post('/api/login', (req, res) => {
     const { email, password } = req.body
