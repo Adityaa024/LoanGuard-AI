@@ -240,7 +240,7 @@ export default function ExceptionQueue() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex items-center gap-3 text-slate-500 text-sm">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-indigo-600"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 border-t-emerald-600"></div>
           <span>Loading exception queue & policy engine state...</span>
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function ExceptionQueue() {
     <div className="flex h-full gap-6 relative">
       
       {/* Left Pane: Queue List */}
-      <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${selectedExc ? 'hidden lg:flex lg:w-[45%]' : 'w-full'}`}>
+      <div className={`flex flex-col flex-1 min-w-0 transition-all duration-300 ${selectedExc ? 'hidden lg:flex lg:w-[40%]' : 'w-full'}`}>
         
         {/* Header */}
         <div className="mb-4">
@@ -261,7 +261,7 @@ export default function ExceptionQueue() {
             <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               <span>Exception Review Queue</span>
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                {exceptions.length} Pending
+                {exceptions.length} Pending Review
               </span>
             </h2>
             <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
@@ -336,11 +336,15 @@ export default function ExceptionQueue() {
 
           <button
             onClick={fetchBatchAiSummary}
-            className="btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1.5 bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+            className="btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1.5 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
             title="Generate AI Cluster Diagnostics Summary"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="hidden sm:inline">AI Summary</span>
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden sm:inline">✦ AI Batch Summary</span>
+            <span className="hidden sm:inline text-[10px] font-mono text-emerald-600">
+              {severityCounts.CRITICAL > 0 && `${severityCounts.CRITICAL} critical`}
+              {severityCounts.HIGH > 0 && ` · ${severityCounts.HIGH} high`}
+            </span>
           </button>
         </div>
 
@@ -765,80 +769,90 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
     <div className="saas-card p-0 flex flex-col h-full overflow-hidden border-slate-200/80 shadow-md bg-white">
       
       {/* 1. Header Bar */}
-      <div className="px-5 py-3.5 border-b border-slate-200/80 bg-white flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2.5">
-          <h3 className="text-base font-bold text-slate-900 font-mono flex items-center gap-2">
-            <span>{exc.loan_id}</span>
+      <div className="px-5 py-3 border-b border-slate-200/80 bg-white shrink-0">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2.5">
+            <h3 className="text-base font-bold text-slate-900 font-mono">{exc.loan_id}</h3>
             <SeverityBadge severity={exc.severity} />
-          </h3>
-          <span className="text-[11px] font-mono text-slate-500 px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200/60">
-            Rule: {exc.rule_id}
-          </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-slate-400 font-mono mr-1">{position}</span>
+            <button 
+              onClick={onPrev} 
+              disabled={!hasPrev}
+              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors cursor-pointer"
+              title="Previous Exception"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={onNext} 
+              disabled={!hasNext}
+              className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors cursor-pointer"
+              title="Next Exception"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-
-        {/* Navigation Controls */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-slate-400 font-mono mr-1">{position}</span>
-          <button 
-            onClick={onPrev} 
-            disabled={!hasPrev}
-            className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors cursor-pointer"
-            title="Previous Exception (↑ / K)"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={onNext} 
-            disabled={!hasNext}
-            className="p-1.5 rounded-lg hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent text-slate-600 transition-colors cursor-pointer"
-            title="Next Exception (↓ / J)"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+          <span className="font-mono font-medium bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">{exc.rule_id}</span>
+          <span className="text-slate-300">·</span>
+          <span>{exc.rule_name || 'Policy Violation'}</span>
         </div>
       </div>
 
       {/* 2. Scrollable Body Content */}
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         
-        {/* Policy Violation Summary */}
+        {/* Validation Failure */}
         <div className="p-3.5 bg-rose-50/80 border border-rose-200/70 rounded-xl text-xs text-rose-900 flex items-start gap-3">
           <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>
-            <div className="font-bold text-rose-950">{exc.rule_name || 'Policy Violation'}</div>
+            <div className="font-bold text-rose-950">WHY THIS FAILED</div>
             <div className="text-rose-700 mt-0.5 leading-relaxed">{exc.description}</div>
           </div>
         </div>
 
-        {/* Side-by-Side Diff Inspector */}
-        <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
-          {/* Current Flawed Value */}
-          <div className="flex flex-col justify-between">
+        {/* Three-State Diff Inspector */}
+        <div className="grid grid-cols-3 gap-3 p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/70">
+          {/* Source Value */}
+          <div className="flex flex-col">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Current Raw Value ({exc.field})
+              Source Value
             </span>
             <div className="font-mono text-sm font-semibold text-rose-600 line-through decoration-rose-400 mt-1">
               {exc.current_value || <span className="italic text-slate-400">Empty / Missing</span>}
             </div>
-            <span className="text-[10px] text-rose-500 mt-1 font-medium">Failed Policy Check</span>
+            <span className="text-[10px] text-rose-500 mt-1 font-medium">Failed check</span>
           </div>
 
-          {/* Corrected Value with Inline Edit */}
-          <div className={`flex flex-col justify-between border-l border-slate-200/80 pl-3.5 transition-colors duration-200 ${suggestionApplied ? 'bg-emerald-50/80 rounded-r-lg' : ''}`}>
+          {/* AI Recommendation */}
+          <div className="flex flex-col border-l border-slate-200/80 pl-3">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              AI Recommendation
+              {suggestionApplied && <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">✓ Applied</span>}
+            </span>
+            <div className="font-mono text-sm font-bold text-emerald-700 mt-1">
+              {correctedValue || <span className="text-slate-400 italic">Pending</span>}
+            </div>
+            <span className="text-[10px] text-emerald-600 mt-1 font-medium">Canonical target</span>
+          </div>
+
+          {/* Final Human Value */}
+          <div className={`flex flex-col border-l border-slate-200/80 pl-3 transition-colors duration-200 ${editMode ? 'bg-amber-50/50 rounded-r-lg' : ''}`}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <span>Proposed Value</span>
-                {suggestionApplied && <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">✓ Applied</span>}
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                Final Human Value
               </span>
               <button 
                 onClick={() => setEditMode(!editMode)}
-                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 cursor-pointer"
+                className="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <Edit3 className="w-2.5 h-2.5" />
                 <span>{editMode ? 'Done' : 'Edit'}</span>
               </button>
             </div>
-
             <div className="mt-1">
               {editMode ? (
                 <input 
@@ -851,13 +865,13 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
               ) : (
                 <div 
                   onClick={() => setEditMode(true)}
-                  className="font-mono text-sm font-bold text-emerald-700 cursor-text hover:bg-emerald-50 px-1 py-0.5 rounded transition-colors"
+                  className="font-mono text-sm font-bold text-slate-800 cursor-text hover:bg-slate-100 px-1 py-0.5 rounded transition-colors"
                 >
-                  {correctedValue || <span className="text-slate-400 italic">No value provided</span>}
+                  {correctedValue || <span className="text-amber-500 italic">⚠ Pending reviewer decision</span>}
                 </div>
               )}
             </div>
-            <span className="text-[10px] text-emerald-600 mt-1 font-medium">Canonical Target</span>
+            <span className="text-[10px] text-slate-400 mt-1 font-medium">⚠ Requires confirmation</span>
           </div>
         </div>
 
@@ -1070,9 +1084,10 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
             ) : (
               <CheckCircle2 className="w-3.5 h-3.5" />
             )}
-            <span>Approve & Sign Off (SHA-256)</span>
+            <span>Approve & Verify</span>
           </button>
         </div>
+        <div className="text-center text-[9px] text-slate-400 -mt-1">SHA-256 integrity record generated on approval</div>
       </div>
 
     </div>

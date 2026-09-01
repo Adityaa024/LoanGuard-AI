@@ -30,9 +30,9 @@ const ROOT = path.resolve(__dirname, '..')
 const USERS_PATH = path.join(ROOT, 'data', 'users.json')
 
 let USERS = [
-  { id: "usr_001", name: "Aditya Raj", email: "aditya.raj@gmail.com", password: "password123", role: "operator", avatar: "AR" },
+  { id: "usr_001", name: "Aditya", email: "aditya.raj@gmail.com", password: "password123", role: "operator", avatar: "A" },
   { id: "usr_002", name: "Rajesh Menon", email: "rajesh.menon@loanguard.ai", password: "password123", role: "reviewer", avatar: "RM" },
-  { id: "usr_003", name: "Ananya Iyer", email: "ananya.iyer@loanguard.ai", password: "password123", role: "consumer", avatar: "AI" }
+  { id: "usr_003", name: "Alex Morgan", email: "alex.morgan@loanguard.ai", password: "password123", role: "consumer", avatar: "AM" }
 ]
 try {
   if (fs.existsSync(USERS_PATH)) {

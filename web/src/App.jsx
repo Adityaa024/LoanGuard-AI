@@ -65,6 +65,12 @@ export default function App() {
   const [stats, setStats] = useState({ total_loans: 0, open_exceptions: 0, verified_loans: 0, data_quality_score: 100 })
   const hiveApi = useRef(null)
 
+  // Auto-switch displayed persona when tab changes (demo convenience)
+  const activePersona = activeTab === 'reviewer' ? USER_PROFILES.reviewer 
+    : activeTab === 'consumer' ? USER_PROFILES.consumer 
+    : USER_PROFILES.operator;
+  const displayUser = user ? { ...user, name: activePersona.name, role: activePersona.role, avatar: activePersona.avatar } : null;
+
   // Fetch summary stats for sidebar counters
   const fetchSummary = useCallback(() => {
     if (!isAuthenticated) return;
@@ -131,31 +137,31 @@ export default function App() {
     }, [fetchSummary])
   )
 
-  const TABS = [
+  const WORKSPACE_TABS = [
     { 
       id: 'operator', 
       label: 'Data Operator', 
       icon: Database, 
       desc: 'Ingestion & Tape Parsing',
-      count: stats.total_loans > 0 ? stats.total_loans.toLocaleString() : null,
-      countLabel: 'loans'
+      count: stats.total_loans > 0 ? stats.total_loans.toLocaleString() : null
     },
     { 
       id: 'reviewer', 
       label: 'Exception Reviewer', 
       icon: ShieldAlert, 
       desc: 'AI Copilot & Resolution',
-      badge: stats.open_exceptions > 0 ? stats.open_exceptions : null,
-      badgeColor: 'bg-amber-100 text-amber-700 border-amber-300'
+      badge: stats.open_exceptions > 0 ? stats.open_exceptions.toLocaleString() : null
     },
     { 
       id: 'consumer', 
       label: 'Data Consumer', 
       icon: CheckCircle2, 
       desc: 'Verified Portfolio & Audit',
-      count: stats.verified_loans > 0 ? stats.verified_loans.toLocaleString() : null,
-      countLabel: 'verified'
-    },
+      count: stats.verified_loans > 0 ? stats.verified_loans.toLocaleString() : null
+    }
+  ]
+
+  const TOOLS_TABS = [
     { 
       id: 'hive', 
       label: '3D Pipeline Visualizer', 
@@ -212,53 +218,91 @@ export default function App() {
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="p-3 space-y-1.5 flex-1 overflow-y-auto">
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-start gap-3 p-2.5 rounded-xl text-left transition-all duration-150 relative cursor-pointer ${
-                  isActive 
-                    ? 'bg-emerald-50/80 text-emerald-950 font-semibold shadow-xs border border-emerald-200/80' 
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80'}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold tracking-tight text-slate-900">{tab.label}</div>
-                    <div className="text-[10px] text-slate-400 font-normal truncate">{tab.desc}</div>
-                  </div>
-                </div>
+        {/* Navigation — Grouped Sections */}
+        <nav className="p-3 flex-1 overflow-y-auto">
+          {/* WORKSPACE */}
+          <div className="mb-3">
+            <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 px-2.5 mb-1.5">Workspace</div>
+            <div className="space-y-1">
+              {WORKSPACE_TABS.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                      isActive 
+                        ? 'bg-emerald-50/80 text-emerald-950 font-semibold shadow-xs border border-emerald-200/80' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`p-1.5 rounded-lg transition-colors shrink-0 ${isActive ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold tracking-tight text-slate-900 truncate">{tab.label}</div>
+                        <div className="text-[9px] text-slate-400 font-normal truncate">{tab.desc}</div>
+                      </div>
+                    </div>
+                    {tab.count && (
+                      <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                        {tab.count}
+                      </span>
+                    )}
+                    {tab.badge && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                {tab.count && (
-                  <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                    {tab.count}
-                  </span>
-                )}
-                {tab.badge && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                    {tab.badge}
-                  </span>
-                )}
-                {tab.pill && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white shadow-2xs">
-                    {tab.pill}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {/* TOOLS */}
+          <div className="mb-3">
+            <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 px-2.5 mb-1.5">Tools</div>
+            <div className="space-y-1">
+              {TOOLS_TABS.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all duration-150 cursor-pointer ${
+                      isActive 
+                        ? 'bg-emerald-50/80 text-emerald-950 font-semibold shadow-xs border border-emerald-200/80' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={`p-1.5 rounded-lg transition-colors shrink-0 ${isActive ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-semibold tracking-tight text-slate-900 truncate">{tab.label}</div>
+                        <div className="text-[9px] text-slate-400 font-normal truncate">{tab.desc}</div>
+                      </div>
+                    </div>
+                    {tab.pill && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white shrink-0">
+                        {tab.pill}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </nav>
         
-        {/* Policy Engine Status Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/60 space-y-2.5">
+        {/* SYSTEM Section */}
+        <div className="p-3 border-t border-slate-100 bg-slate-50/60 space-y-2">
+          <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 px-1 mb-1">System</div>
           <button 
             onClick={() => setShowPolicyCatalog(true)}
             className="w-full flex items-center justify-between text-xs p-2 rounded-xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all cursor-pointer shadow-2xs group text-left"
@@ -268,28 +312,28 @@ export default function App() {
               <span className="relative flex h-2 w-2">
                 <span className="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[11px] font-semibold text-slate-700 group-hover:text-emerald-950">Policy Engine Active</span>
+              <span className="text-[10px] font-semibold text-slate-700 group-hover:text-emerald-950">Policy Engine</span>
             </div>
-            <span className="text-[10px] font-bold font-mono text-emerald-800 bg-emerald-50 group-hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
-              12 POLICIES ↗
+            <span className="text-[9px] font-bold font-mono text-emerald-800 bg-emerald-50 group-hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200">
+              12 POLICIES
             </span>
           </button>
 
-          <div className="grid grid-cols-2 gap-2 pt-1">
+          <div className="grid grid-cols-2 gap-1.5">
             <a 
               href="/ai_development_log.md" 
               target="_blank" 
-              className="btn-secondary text-[11px] py-1.5 px-2 text-slate-600 hover:text-emerald-900 justify-center"
+              className="btn-secondary text-[10px] py-1.5 px-2 text-slate-600 hover:text-emerald-900 justify-center"
             >
-              <FileCode2 className="w-3.5 h-3.5 text-slate-400" />
+              <FileCode2 className="w-3 h-3 text-slate-400" />
               AI Dev Log
             </a>
             <a 
               href="/api/summary" 
               target="_blank" 
-              className="btn-secondary text-[11px] py-1.5 px-2 text-slate-600 hover:text-emerald-900 justify-center"
+              className="btn-secondary text-[10px] py-1.5 px-2 text-slate-600 hover:text-emerald-900 justify-center"
             >
-              <Activity className="w-3.5 h-3.5 text-slate-400" />
+              <Activity className="w-3 h-3 text-slate-400" />
               API Stats
             </a>
           </div>
@@ -324,10 +368,10 @@ export default function App() {
             </div>
 
             {/* Quality Pill */}
-            <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50/60 border border-indigo-100 rounded-lg text-xs font-medium text-indigo-900">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Data Score: </span>
-              <span className="font-bold text-indigo-700">{stats.data_quality_score}%</span>
+            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50/60 border border-emerald-200/60 rounded-lg text-xs font-medium text-emerald-900">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Data Quality</span>
+              <span className="font-bold text-emerald-700">{stats.data_quality_score}%</span>
             </div>
 
             {/* Active User Switcher Pill & Sign Out */}
@@ -338,11 +382,11 @@ export default function App() {
                 title="Switch Demo Persona"
               >
                 <div className="text-right hidden md:block">
-                  <div className="text-xs font-bold text-slate-800 leading-tight">{user.name}</div>
-                  <div className="text-[10px] text-indigo-600 font-medium capitalize">{user.role} (Switch ▾)</div>
+                  <div className="text-xs font-bold text-slate-800 leading-tight">{displayUser?.name || user.name}</div>
+                  <div className="text-[10px] text-emerald-600 font-medium capitalize">{displayUser?.role || user.role} (Switch ▾)</div>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold ring-2 ring-indigo-50">
-                  {user.avatar}
+                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold ring-2 ring-emerald-50">
+                  {displayUser?.avatar || user.avatar}
                 </div>
               </button>
 
@@ -352,39 +396,39 @@ export default function App() {
                     Switch Active Persona
                   </div>
                   <button
-                    onClick={() => switchPersona('aditya.raj@gmail.com')}
-                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${user.email === 'aditya.raj@gmail.com' ? 'bg-indigo-50/60 font-semibold text-indigo-900' : 'text-slate-700'}`}
+                    onClick={() => { switchPersona('aditya.raj@gmail.com'); setActiveTab('operator'); }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer ${activeTab === 'operator' ? 'bg-emerald-50/60 font-semibold text-emerald-900' : 'text-slate-700'}`}
                   >
                     <div>
-                      <div className="font-bold">Aditya Raj</div>
+                      <div className="font-bold">Aditya</div>
                       <div className="text-[10px] text-slate-400">Data Operator</div>
                     </div>
-                    {user.email === 'aditya.raj@gmail.com' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                    {activeTab === 'operator' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
                   </button>
                   <button
-                    onClick={() => switchPersona('rajesh.menon@loanguard.ai')}
-                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${user.email === 'rajesh.menon@loanguard.ai' ? 'bg-indigo-50/60 font-semibold text-indigo-900' : 'text-slate-700'}`}
+                    onClick={() => { switchPersona('rajesh.menon@loanguard.ai'); setActiveTab('reviewer'); }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer ${activeTab === 'reviewer' ? 'bg-emerald-50/60 font-semibold text-emerald-900' : 'text-slate-700'}`}
                   >
                     <div>
                       <div className="font-bold">Rajesh Menon</div>
-                      <div className="text-[10px] text-slate-400">Exception Reviewer</div>
+                      <div className="text-[10px] text-slate-400">Reviewer</div>
                     </div>
-                    {user.email === 'rajesh.menon@loanguard.ai' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                    {activeTab === 'reviewer' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
                   </button>
                   <button
-                    onClick={() => switchPersona('ananya.iyer@loanguard.ai')}
-                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors ${user.email === 'ananya.iyer@loanguard.ai' ? 'bg-indigo-50/60 font-semibold text-indigo-900' : 'text-slate-700'}`}
+                    onClick={() => { switchPersona('alex.morgan@loanguard.ai'); setActiveTab('consumer'); }}
+                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer ${activeTab === 'consumer' ? 'bg-emerald-50/60 font-semibold text-emerald-900' : 'text-slate-700'}`}
                   >
                     <div>
-                      <div className="font-bold">Ananya Iyer</div>
+                      <div className="font-bold">Alex Morgan</div>
                       <div className="text-[10px] text-slate-400">Data Consumer</div>
                     </div>
-                    {user.email === 'ananya.iyer@loanguard.ai' && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />}
+                    {activeTab === 'consumer' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
                   </button>
                   <div className="border-t border-slate-100 my-1"></div>
                   <button
                     onClick={handleSignOut}
-                    className="w-full text-left px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 font-medium transition-colors"
+                    className="w-full text-left px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 font-medium transition-colors cursor-pointer"
                   >
                     Sign Out
                   </button>
