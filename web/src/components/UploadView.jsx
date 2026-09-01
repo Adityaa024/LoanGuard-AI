@@ -125,6 +125,35 @@ export default function OperatorView() {
 
   const [showPolicyModal, setShowPolicyModal] = useState(false);
 
+  const loadPresetTape = async (presetKey) => {
+    let csvData = '';
+    let fname = '';
+    let stype = 'primary_tape';
+    const tag = Math.floor(Math.random() * 900 + 100);
+
+    if (presetKey === 'adversarial' || presetKey === 'institutional') {
+      fname = `demo_institutional_tape_${tag}.csv`;
+      stype = 'primary_tape';
+      csvData = `loan_id,borrower_name,origination_date,maturity_date,principal_balance,current_balance,interest_rate,monthly_payment,loan_status,property_type,property_state,ltv_ratio,credit_score,zip_code
+LN-INST-101_${tag},Aditya Raj,01/15/2022,01/15/2052,350000,340000,4.25,1721.88,Current,Single Family,CA,75,760,94102
+LN-INST-102_${tag},Elena Rostova,03/20/2021,03/20/2051,480000,460000,3.75,2223.11,Current,Condo,WA,80,780,98101
+LN-INST-103_${tag},Marcus Vance,06/10/2020,06/10/2050,220000,210000,5.15,1201.45,Current,Townhouse,TX,70,720,75001
+LN-INST-104_${tag},David Kim,11/05/2023,11/05/2053,550000,-45000,4.85,2902.10,Current,Single Family,CA,85,690,90001
+LN-INST-105_${tag},,04/12/2022,04/12/2052,310000,295000,4.50,1570.73,Current,Single Family,NY,78,740,10001
+LN-INST-106_${tag},Rachel Green,10/10/2024,10/10/2022,400000,390000,4.10,1933.20,Current,Condo,FL,80,755,33101
+LN-INST-107_${tag},Carlos Santana,02/18/2023,02/18/2053,280000,270000,38.50,8120.45,Current,Single Family,TX,75,710,77001
+LN-INST-108_${tag},Sarah Jenkins,05/15/2021,05/15/2051,420000,405000,4.35,2091.22,Current,Single Family,IL,80,775,60601
+LN-INST-109_${tag},Michael Chang,08/22/2022,08/22/2052,360000,345000,4.60,1845.60,Current,Townhouse,NC,72,735,27514
+LN-INST-110_${tag},Amina Patel,12/01/2023,12/01/2053,500000,490000,5.20,2745.30,Current,Single Family,GA,85,680,30301`;
+    }
+
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const syntheticFile = new File([blob], fname, { type: 'text/csv' });
+    setFile(syntheticFile);
+    setSourceType(stype);
+    toast.success("Dataset Loaded", `Attached ${fname} (${(syntheticFile.size / 1024).toFixed(1)} KB)`);
+  };
+
   // Quick Preset Loan Tape Loaders (Full Problem Statement Package)
   const loadPreset = async (type) => {
     let csvContent = '';
@@ -383,6 +412,35 @@ export default function OperatorView() {
                 >
                   <CheckCircle2 className="w-3 h-3" />
                   <span>Doc Manifest</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Test Dataset Toolbar */}
+            <div className="mb-3 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span>Quick Test Datasets</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">1-click load</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => loadPresetTape('institutional')}
+                  className="text-[11px] font-bold py-1.5 px-2 rounded-lg bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200/80 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <FileText className="w-3 h-3 text-emerald-600" />
+                  <span>Adversarial Tape (10 Loans)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loadPreset('clean')}
+                  className="text-[11px] font-bold py-1.5 px-2 rounded-lg bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200/80 shadow-2xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>Clean Valid Tape</span>
                 </button>
               </div>
             </div>

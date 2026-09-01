@@ -34,7 +34,7 @@ import {
 export default function VerifiedRecords() {
   const [loans, setLoans] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedHash, setCopiedHash] = useState(null);
@@ -292,6 +292,16 @@ export default function VerifiedRecords() {
         
         {/* Actions & Export Buttons */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button 
+            onClick={handleVerifyLedger} 
+            disabled={verifyingLedger}
+            className="btn-secondary text-xs py-2 px-3.5 bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 cursor-pointer flex items-center gap-1.5"
+            title="Cryptographically verify SHA-256 Merkle chain integrity"
+          >
+            <Lock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{verifyingLedger ? 'Verifying...' : 'Verify Ledger Integrity'}</span>
+          </button>
+
           <button 
             onClick={handleServerExport} 
             className="btn-primary text-xs py-2 px-3.5"
