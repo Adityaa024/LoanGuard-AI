@@ -1,0 +1,43 @@
+# ================================================================
+# LOANGUARD-AI — OFFICIAL 5-MINUTE COMPETITION DEMO SCRIPT
+# Intain Campus FinTech Challenge 2026 | Full Stack Track
+# ================================================================
+
+[SCENE 1 | 0:00 - 0:25 | LOGIN + DATA OPERATOR]
+"Welcome to LoanGuard-AI, an AI-assisted loan data verification platform. We begin with the Data Operator, responsible for bringing loan data into the verification workflow."
+
+[SCENE 2 | 0:25 - 0:55 | LOAN TAPE INGESTION]
+"The operator ingests a deliberately messy loan tape containing records that need validation. The deterministic policy engine evaluates the dataset before records can enter the verified workflow."
+
+[SCENE 3 | 0:55 - 1:15 | VALIDATION SUMMARY]
+"The validation summary separates clean records from records requiring review, while the reconciliation view keeps the reported counts tied to the processed dataset."
+
+[SCENE 4 | 1:15 - 1:35 | FAILED ROWS + BATCH LINEAGE]
+"At row level, the operator can inspect the exact validation failures. At batch level, the system preserves source lineage and processing history for traceability."
+
+[SCENE 5 | 1:35 - 1:55 | REVIEWER TRANSITION]
+"The Reviewer workspace is focused on resolving flagged exceptions. The queue and inspector stay synchronized around the selected record."
+
+[SCENE 6 | 1:55 - 2:30 | AI DIAGNOSTICS & COPILOT]
+"The deterministic validation identifies the failure, while the AI Copilot explains the root cause and proposes a possible resolution. The source value, AI recommendation, and final human decision remain separate."
+
+[SCENE 7 | 2:30 - 2:55 | HUMAN-IN-THE-LOOP INTERACTION]
+"The AI recommendation is first applied as a reviewer-controlled draft. It does not silently modify the verified record. The human reviewer remains responsible for the final decision."
+
+[SCENE 8 | 2:55 - 3:10 | APPROVE & VERIFY]
+"Only after explicit human approval does the system create the verified record and its integrity artifact."
+
+[SCENE 9 | 3:10 - 3:35 | DATA CONSUMER DASHBOARD]
+"The Data Consumer receives the trusted output of the workflow: reviewer-approved records, validation status, source lineage, and integrity information."
+
+[SCENE 10 | 3:35 - 4:00 | VERIFY LEDGER & AUDIT TRAIL]
+"The consumer can verify the integrity of the recorded history. At loan level, the audit trail reconstructs the journey from ingestion through verification."
+
+[SCENE 11 | 4:00 - 4:20 | VERIFIED RECORD API]
+"The verified portfolio is also exposed through a REST API for trusted downstream consumption."
+
+[SCENE 12 | 4:20 - 4:45 | AI DEVELOPMENT LOG]
+"The AI Development Log documents how AI was used during engineering, how outputs were reviewed, and where human judgment was required."
+
+[SCENE 13 | 4:45 - 5:00 | ARCHITECTURAL CONCLUSION & CLOSE]
+"LoanGuard-AI combines deterministic loan-data validation, human-controlled AI review, verified records, and cryptographically traceable audit history in one full-stack workflow."
