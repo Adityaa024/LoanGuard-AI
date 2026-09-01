@@ -55,9 +55,13 @@ const USER_PROFILES = {
 }
 
 export default function App() {
-  // Always start on login page — require explicit authentication
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('loanguard_token')
+  })
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('loanguard_user')
+    try { return saved ? JSON.parse(saved) : USER_PROFILES.operator } catch { return USER_PROFILES.operator }
+  })
   const [activeTab, setActiveTab] = useState('operator')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showPolicyCatalog, setShowPolicyCatalog] = useState(false)
