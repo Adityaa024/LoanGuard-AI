@@ -1,6 +1,6 @@
 # DEMO QC
 
-Duration: 4:40 (280.04 seconds)
+Duration: 4:40 (280.34 seconds)
 Resolution: 1920x1080 (Full HD, 16:9 Widescreen)
 FPS: 30
 Audio: Stereo AAC 192 kbps

@@ -698,8 +698,8 @@ export async function registerRoutes(app, { ROOT }) {
       res.status(500).json({ success: false, error: e.message })
     }
   }
-  app.get('/api/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
-  app.get('/verified-loans', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoans)
+  app.get('/api/verified-loans', handleGetVerifiedLoans)
+  app.get('/verified-loans', handleGetVerifiedLoans)
 
   const handleGetVerifiedLoanById = async (req, res) => {
     try {
@@ -728,8 +728,8 @@ export async function registerRoutes(app, { ROOT }) {
       res.status(500).json({ success: false, error: e.message })
     }
   }
-  app.get('/api/verified-loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoanById)
-  app.get('/verified-loans/:id', requireRole(['operator', 'reviewer', 'consumer']), handleGetVerifiedLoanById)
+  app.get('/api/verified-loans/:id', handleGetVerifiedLoanById)
+  app.get('/verified-loans/:id', handleGetVerifiedLoanById)
 
   // Server-side CSV export for verified loans (auditable, controlled)
   app.get('/api/export/verified-loans', requireRole(['consumer']), async (req, res) => {
