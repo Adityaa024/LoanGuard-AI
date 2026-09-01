@@ -209,26 +209,82 @@ export default function ExceptionQueue() {
   const [batchAiLoading, setBatchAiLoading] = useState(false);
 
   // AI Batch Summary
-  const fetchBatchAiSummary = async () => {
+  const fetchBatchAiSummary = async (customIds = null) => {
     setBatchAiLoading(true);
     setShowBatchAiModal(true);
     try {
       const token = localStorage.getItem('loanguard_token');
+      const targetIds = Array.isArray(customIds) 
+        ? customIds 
+        : (selectedIds.size > 0 ? Array.from(selectedIds) : null);
+
       const res = await fetch('/api/ai/batch-summary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
+        },
+        body: JSON.stringify({
+          exception_ids: targetIds,
+          rule_id: ruleFilter !== 'ALL' ? ruleFilter : null
+        })
       });
       const data = await res.json();
       if (data.success) {
         setBatchAiData(data.data);
+      } else {
+        toast.error("AI Summary Failed", data.error || "Unable to generate summary");
       }
     } catch (e) {
       console.error(e);
+      toast.error("AI Summary Error", e.message);
     } finally {
       setBatchAiLoading(false);
+    }
+  };
+
+  // One-Click Batch Resolve from Modal
+  const handleBatchResolveFromModal = async (action = 'approve') => {
+    const idsToResolve = selectedIds.size > 0 
+      ? Array.from(selectedIds)
+      : (batchAiData?.cluster_breakdown?.[0]?.sample_loans?.map(l => {
+          const exc = exceptions.find(e => e.loan_id === l || e.id === l);
+          return exc ? exc.id : null;
+        }).filter(Boolean) || []);
+
+    if (idsToResolve.length === 0) {
+      toast.error("Batch Resolution", "No applicable exceptions identified to resolve.");
+      return;
+    }
+
+    setBulkBusy(true);
+    try {
+      const token = localStorage.getItem('loanguard_token');
+      const res = await fetch('/api/exceptions/batch-resolve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          exception_ids: idsToResolve,
+          action: action === 'approve' ? 'resolve' : 'reject',
+          note: `Resolved via AI Batch Diagnostics Copilot (${action})`
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Batch Completed", `Successfully resolved ${data.count} exceptions in batch.`);
+        setSelectedIds(new Set());
+        setShowBatchAiModal(false);
+        fetchExceptions();
+      } else {
+        toast.error("Batch Failed", data.error || "Failed to process batch");
+      }
+    } catch (e) {
+      toast.error("Batch Error", e.message);
+    } finally {
+      setBulkBusy(false);
     }
   };
 
@@ -407,6 +463,15 @@ export default function ExceptionQueue() {
             </span>
             <div className="flex items-center gap-1.5">
               <button
+                onClick={() => fetchBatchAiSummary()}
+                disabled={bulkBusy}
+                className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1 bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50 cursor-pointer"
+                title="Synthesize AI diagnostic summary for selected exceptions"
+              >
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                <span>✦ AI Batch Summary ({selectedIds.size})</span>
+              </button>
+              <button
                 onClick={() => handleBulkResolve('reject')}
                 disabled={bulkBusy}
                 className="btn-danger text-[11px] py-1 px-2.5"
@@ -545,6 +610,7 @@ export default function ExceptionQueue() {
             hasNext={currentIndex < filteredExceptions.length - 1}
             hasPrev={currentIndex > 0}
             position={`${currentIndex + 1} of ${filteredExceptions.length}`}
+            onOpenBatchAi={() => fetchBatchAiSummary()}
           />
         ) : (
           <div className="text-center p-8 space-y-3 text-slate-400 max-w-sm">
@@ -577,13 +643,24 @@ export default function ExceptionQueue() {
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">AI Cluster Diagnostics Summary</h3>
-                    <p className="text-xs text-slate-500">Portfolio-wide exception analysis & remediation recommendations</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-slate-900">AI Cluster Diagnostics Summary</h3>
+                      {batchAiData && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          {batchAiData.scope === 'selected' ? `${batchAiData.total_exceptions} Selected` : `${batchAiData.total_exceptions} Portfolio Total`}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {batchAiData?.scope === 'selected' 
+                        ? 'Targeted AI diagnostic analysis for currently selected exception records' 
+                        : 'Portfolio-wide exception cluster analysis & remediation recommendations'}
+                    </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowBatchAiModal(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -593,31 +670,57 @@ export default function ExceptionQueue() {
                 {batchAiLoading ? (
                   <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 text-sm">
                     <RefreshCw className="w-6 h-6 animate-spin text-emerald-600" />
-                    <span>Synthesizing exception clusters...</span>
+                    <span>Synthesizing exception clusters across loan pool...</span>
                   </div>
                 ) : batchAiData ? (
                   <>
-                    <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-100 text-xs text-emerald-950 leading-relaxed">
+                    {/* Severity Counters Strip */}
+                    {batchAiData.severity_counts && (
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="p-2 rounded-lg bg-rose-50 border border-rose-100 text-center">
+                          <div className="text-[10px] font-bold text-rose-600 uppercase">Critical</div>
+                          <div className="font-bold text-rose-950 font-mono text-sm">{batchAiData.severity_counts.critical || 0}</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-amber-50 border border-amber-100 text-center">
+                          <div className="text-[10px] font-bold text-amber-600 uppercase">High</div>
+                          <div className="font-bold text-amber-950 font-mono text-sm">{batchAiData.severity_counts.high || 0}</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-blue-50 border border-blue-100 text-center">
+                          <div className="text-[10px] font-bold text-blue-600 uppercase">Medium</div>
+                          <div className="font-bold text-blue-950 font-mono text-sm">{batchAiData.severity_counts.medium || 0}</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                          <div className="text-[10px] font-bold text-slate-600 uppercase">Low</div>
+                          <div className="font-bold text-slate-950 font-mono text-sm">{batchAiData.severity_counts.low || 0}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-950 leading-relaxed shadow-2xs">
                       <div className="font-semibold text-emerald-900 mb-1 flex items-center gap-1.5">
                         <Zap className="w-3.5 h-3.5 text-emerald-600" />
-                        Executive Copilot Briefing
+                        <span>Executive Copilot Briefing</span>
                       </div>
                       {batchAiData.ai_summary}
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Cluster Breakdown</h4>
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Cluster Breakdown</h4>
+                        <span className="text-[11px] text-slate-400 font-mono">{batchAiData.cluster_breakdown?.length || 0} clusters identified</span>
+                      </div>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
                         {batchAiData.cluster_breakdown?.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-xs">
-                            <div className="flex items-center gap-2">
+                          <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 text-xs hover:bg-slate-100/80 transition-colors">
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
                               <span className="font-mono font-bold text-slate-800">{item.rule_id}</span>
-                              <span className="text-slate-600">({item.rule_name})</span>
+                              <span className="text-slate-600 truncate">({item.rule_name})</span>
+                              {item.field && <span className="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded font-mono truncate">field: {item.field}</span>}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 shrink-0">
                               <SeverityBadge severity={item.severity} />
-                              <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
-                                {item.count} loans
+                              <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">
+                                {item.count.toLocaleString()} loans
                               </span>
                             </div>
                           </div>
@@ -626,22 +729,51 @@ export default function ExceptionQueue() {
                     </div>
 
                     <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-                      <span className="font-semibold text-slate-800">Suggested Action: </span>
-                      {batchAiData.suggested_batch_action}
+                      <span className="font-semibold text-slate-800">AI Remediation Plan: </span>
+                      <span>{batchAiData.suggested_batch_action}</span>
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-slate-500">No batch diagnostics data available.</p>
+                  <p className="text-xs text-slate-500 text-center py-6">No batch diagnostics data available for current selection.</p>
                 )}
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-                <button
-                  onClick={() => setShowBatchAiModal(false)}
-                  className="btn-secondary text-xs py-1.5 px-4"
-                >
-                  Close
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div>
+                  {selectedIds.size > 0 && (
+                    <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
+                      <CheckSquare className="w-3 h-3 text-emerald-600" />
+                      <span>{selectedIds.size} records queued</span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowBatchAiModal(false)}
+                    className="btn-secondary text-xs py-1.5 px-4 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  {selectedIds.size > 0 ? (
+                    <button
+                      onClick={() => handleBatchResolveFromModal('approve')}
+                      disabled={bulkBusy}
+                      className="btn-primary text-xs py-1.5 px-4 shadow-emerald-500/10 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{bulkBusy ? 'Resolving...' : `Bulk Approve Selected (${selectedIds.size})`}</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleBatchResolveFromModal('approve')}
+                      disabled={bulkBusy}
+                      className="btn-primary text-xs py-1.5 px-4 shadow-emerald-500/10 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{bulkBusy ? 'Resolving...' : 'Auto-Remediate Top Cluster'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           </div>
@@ -688,7 +820,7 @@ function SeverityBadge({ severity }) {
 
 const globalAiCache = new Map();
 
-function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, position }) {
+function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, position, onOpenBatchAi }) {
   const [aiReview, setAiReview] = useState(() => globalAiCache.get(exc.id) || null);
   const [loanData, setLoanData] = useState(null);
   const [loadingAi, setLoadingAi] = useState(() => !globalAiCache.has(exc.id));
@@ -825,6 +957,16 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
             <SeverityBadge severity={exc.severity} />
           </div>
           <div className="flex items-center gap-1.5">
+            {onOpenBatchAi && (
+              <button
+                onClick={onOpenBatchAi}
+                className="btn-secondary text-[10px] py-1 px-2 flex items-center gap-1 bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100 cursor-pointer mr-1"
+                title="View portfolio-wide AI anomaly cluster summary"
+              >
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                <span className="hidden sm:inline">AI Batch Summary</span>
+              </button>
+            )}
             <span className="text-[11px] text-slate-400 font-mono mr-1">{position}</span>
             <button 
               onClick={onPrev} 

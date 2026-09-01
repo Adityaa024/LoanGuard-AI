@@ -730,30 +730,97 @@ export async function registerRoutes(app, { ROOT }) {
   const handleBatchAiSummary = async (req, res) => {
     try {
       const db = await getDb()
-      const openExceptions = await db.all(`
-        SELECT e.rule_id, e.rule_name, e.severity, e.field, count(*) as count 
-        FROM exceptions e 
-        WHERE e.status = 'open' 
-        GROUP BY e.rule_id, e.severity
-        ORDER BY count DESC
-      `)
-
-      const totalOpen = openExceptions.reduce((acc, curr) => acc + curr.count, 0)
+      const { exception_ids, rule_id } = req.body || {}
       
-      let summaryText = `Identified ${totalOpen} active exceptions across the current loan portfolio. `
-      if (openExceptions.length > 0) {
-        const topIssue = openExceptions[0]
-        summaryText += `Primary anomaly cluster: ${topIssue.rule_name} (${topIssue.count} occurrences, severity: ${topIssue.severity}). `
+      let query = `
+        SELECT e.id, e.loan_id, e.rule_id, e.rule_name, e.severity, e.field, e.current_value, e.description, l.loan_id as original_loan_id
+        FROM exceptions e
+        JOIN loans l ON e.loan_id = l.id
+        WHERE e.status = 'open'
+      `
+      const params = []
+
+      if (Array.isArray(exception_ids) && exception_ids.length > 0) {
+        const placeholders = exception_ids.map(() => '?').join(',')
+        query += ` AND e.id IN (${placeholders}) `
+        params.push(...exception_ids)
+      } else if (rule_id) {
+        query += ` AND e.rule_id = ? `
+        params.push(rule_id)
       }
-      summaryText += `Recommended remediation: Batch-approve formatting anomalies (state uppercase, decimal corrections) and inspect cross-source balance discrepancies.`
+
+      query += ` ORDER BY e.severity DESC, e.id DESC LIMIT 5000 `
+
+      const rawRows = await db.all(query, params)
+      const totalCount = rawRows.length
+
+      // Compute cluster breakdown
+      const clusterMap = new Map()
+      const severityCounts = { critical: 0, high: 0, medium: 0, low: 0 }
+
+      for (const row of rawRows) {
+        const key = `${row.rule_id}_${row.severity}`
+        const sev = (row.severity || 'low').toLowerCase()
+        if (severityCounts[sev] !== undefined) severityCounts[sev]++
+
+        if (!clusterMap.has(key)) {
+          clusterMap.set(key, {
+            rule_id: row.rule_id,
+            rule_name: row.rule_name,
+            severity: row.severity,
+            field: row.field,
+            count: 0,
+            sample_loans: []
+          })
+        }
+        const item = clusterMap.get(key)
+        item.count++
+        if (item.sample_loans.length < 5) {
+          item.sample_loans.push(row.original_loan_id || row.loan_id)
+        }
+      }
+
+      const clusterBreakdown = Array.from(clusterMap.values()).sort((a, b) => b.count - a.count)
+
+      // Intelligent natural-language summary synthesis
+      let summaryText = ''
+      const scopeLabel = Array.isArray(exception_ids) && exception_ids.length > 0
+        ? `analyzing ${totalCount} specifically selected exceptions`
+        : `analyzing ${totalCount} active exceptions in the current portfolio view`
+
+      if (totalCount === 0) {
+        summaryText = `No active exceptions detected matching the current criteria. All loan records in this scope satisfy established underwriting & compliance policies.`
+      } else {
+        summaryText = `AI Copilot cluster synthesis completed (${scopeLabel}). `
+        if (severityCounts.critical > 0) {
+          summaryText += `🚨 High-Risk Alerts: Detected ${severityCounts.critical} critical anomalies requiring mandatory manual audit (e.g. negative balances or duplicate loan identifiers). `
+        }
+        if (severityCounts.high > 0) {
+          summaryText += `⚠️ High-Severity Findings: ${severityCounts.high} interest-rate or cross-source tape variances flagged. `
+        }
+        if (severityCounts.medium > 0 || severityCounts.low > 0) {
+          const formatTotal = (severityCounts.medium || 0) + (severityCounts.low || 0)
+          summaryText += `📋 Format & Metadata: ${formatTotal} low/medium formatting anomalies (USPS state code casing, decimal alignment) identified as prime candidates for one-click batch resolution.`
+        }
+      }
+
+      const topCluster = clusterBreakdown[0]
+      const suggestedAction = topCluster 
+        ? topCluster.severity === 'critical'
+          ? `Priority 1: Isolate and manually inspect ${topCluster.count} '${topCluster.rule_name}' records before pool securitization.`
+          : `Batch-remediate ${topCluster.count} '${topCluster.rule_name}' items across loans: ${topCluster.sample_loans.slice(0, 3).join(', ')}...`
+        : 'All exception queues clear.'
 
       res.json({
         success: true,
         data: {
-          total_exceptions: totalOpen,
-          cluster_breakdown: openExceptions,
+          total_exceptions: totalCount,
+          severity_counts: severityCounts,
+          cluster_breakdown: clusterBreakdown,
           ai_summary: summaryText,
-          suggested_batch_action: 'Batch-approve low/medium formatting exceptions first; manually inspect critical negative balances.'
+          suggested_batch_action: suggestedAction,
+          scope: Array.isArray(exception_ids) && exception_ids.length > 0 ? 'selected' : 'all_open',
+          timestamp: new Date().toISOString()
         }
       })
     } catch (e) {
