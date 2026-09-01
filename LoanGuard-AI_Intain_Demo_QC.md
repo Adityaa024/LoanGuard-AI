@@ -5,7 +5,7 @@
 - **Master Video File**: `LoanGuard-AI_Intain_5Min_Final.mp4`
 - **Raw Capture File**: `LoanGuard-AI_Intain_Raw.mp4`
 - **Official Narration**: `LoanGuard-AI_Intain_Narration.txt`
-- **Actual Duration**: 5m 04s (304.04 seconds)
+- **Actual Duration**: 4m 48s (288.04 seconds)
 - **Target Duration**: 4:45 – 5:00 (PASSED)
 - **Resolution**: 1920 × 1080 (Full HD, 16:9 Widescreen)
 - **Framerate**: 30.00 FPS
