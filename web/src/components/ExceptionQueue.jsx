@@ -651,6 +651,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const [aiReview, setAiReview] = useState(() => globalAiCache.get(exc.id) || null);
   const [loanData, setLoanData] = useState(null);
   const [loadingAi, setLoadingAi] = useState(() => !globalAiCache.has(exc.id));
+  const toast = useToast();
   
   // Decoupled 3-state value model: human draft value is null until human action
   const [draftValue, setDraftValue] = useState(null);
@@ -743,6 +744,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        toast.success("Exception Resolved", `Loan ${exc.loan_id} successfully ${action === 'approve' ? 'approved & verified' : 'rejected'}.`);
         onResolved();
       } else {
         toast.error("Resolution Failed", data.error || 'Failed to update exception');
