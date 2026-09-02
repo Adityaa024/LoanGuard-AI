@@ -264,6 +264,16 @@ npm test
 node scripts/test_all_csv_uploads.cjs
 ```
 
+### 4. Generate Automated Video Demos (Optional)
+The repository includes a suite of automated Python scripts (using Playwright) that navigate the platform and record high-quality UI walkthroughs.
+```bash
+# Requires Python and Playwright
+pip install playwright
+playwright install
+python scripts/record_full_5min_demo.py
+python scripts/produce_demo_video.py
+```
+
 ---
 
 ## 📡 REST API Reference
@@ -305,6 +315,10 @@ node scripts/test_all_csv_uploads.cjs
 
 - 🧪 **[QA Test Report](./qa_test_report.md):** Multi-CSV automated test execution report.
 - 🔴 **[Brutal Red-Team Audit](./QA_BRUTAL_AUDIT.md):** Security, fuzzing, and hostile penetration test results.
+- 📑 **[Problem Statement Gap Audit](./PS_GAP_AUDIT.md):** Formal capability map against the original Intain problem statement constraints.
+- 🎨 **[QA UI/UX Review](./QA_UI_REVIEW.md):** Front-end aesthetics, responsiveness, and accessibility review.
+- 🔍 **[Data Consumer Persona Audit](./DATA_CONSUMER_AUDIT.md):** Specific functional review covering cryptographic verification and exporting.
+- 📽️ **[Demo Video QC Script](./LoanGuard-AI_Demo_QC.md):** Quality control and scene breakdown for the automated UI video demo generation.
 - 🎨 **[System Walkthrough](./walkthrough.md):** Visual UI tour and interactive session guide.
 - 🤖 **[AI Development Log](./ai_development_log.md):** Section 10 Agentic Coding compliance log with prompt evidence and human review case studies.
 - 📋 **[Executive Problem Brief](./BRIEF.md):** Intain Problem Statement technical briefing.
