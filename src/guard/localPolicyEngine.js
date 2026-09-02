@@ -147,7 +147,7 @@ export class LocalPolicyEngine {
     if (!r?.appliesTo?.includes(action.type)) return null
     if (!action.record) return null
     
-    if (action.record.principal_balance !== undefined && action.record.principal_balance < 0) {
+    if (action.record.principal_balance !== undefined && Number(action.record.principal_balance) < 0) {
       return {
         outcome: DECISION.ESCALATE,
         escalated: true,
@@ -156,6 +156,19 @@ export class LocalPolicyEngine {
         reason: `Principal balance is negative: ${action.record.principal_balance}`,
         category: 'exception',
         field: 'principal_balance',
+        severity: 'critical'
+      }
+    }
+    
+    if (action.record.current_balance !== undefined && Number(action.record.current_balance) < 0) {
+      return {
+        outcome: DECISION.ESCALATE,
+        escalated: true,
+        policyId: r.id,
+        rule: 'negative_balance',
+        reason: `Current balance is negative: ${action.record.current_balance}`,
+        category: 'exception',
+        field: 'current_balance',
         severity: 'critical'
       }
     }
@@ -223,6 +236,19 @@ export class LocalPolicyEngine {
     const orig = new Date(action.record.origination_date)
     const mat = new Date(action.record.maturity_date)
     
+    if (isNaN(orig.getTime()) || isNaN(mat.getTime())) {
+      return {
+        outcome: DECISION.ESCALATE,
+        escalated: true,
+        policyId: r.id,
+        rule: 'invalid_dates',
+        reason: `Invalid date format provided for origination or maturity date`,
+        category: 'exception',
+        field: isNaN(orig.getTime()) ? 'origination_date' : 'maturity_date',
+        severity: 'medium'
+      }
+    }
+    
     if (mat <= orig) {
       return {
         outcome: DECISION.ESCALATE,
@@ -281,21 +307,32 @@ export class LocalPolicyEngine {
   checkStaleRecord(action, ctx) {
     const r = this.rules.stale_record
     if (!r?.appliesTo?.includes(action.type)) return null
-    if (!action.record || !action.record.last_updated_at) return null
+    if (!action.record || !action.record.last_updated_at || action.record.last_updated_at === '') return null;
     
     const lastUpdate = new Date(action.record.last_updated_at)
+    if (isNaN(lastUpdate.getTime())) {
+        return {
+            policyId: 'POL-TIME-001',
+            rule: 'stale_record',
+            field: 'last_updated_at',
+            severity: 'low',
+            reason: 'Invalid timestamp format. Cannot verify recency.',
+            outcome: 'escalate'
+        }
+    }
+    
     const ageDays = (ctx.now - lastUpdate) / (1000 * 60 * 60 * 24)
     if (ageDays > 90) {
-      return {
-        outcome: DECISION.ESCALATE,
-        escalated: true,
-        policyId: r.id,
-        rule: 'stale_record',
-        reason: `Record is stale. Last updated ${Math.round(ageDays)} days ago.`,
-        category: 'exception',
-        field: 'last_updated_at',
-        severity: 'low'
-      }
+        return {
+            outcome: DECISION.ESCALATE,
+            escalated: true,
+            policyId: 'POL-TIME-001',
+            rule: 'stale_record',
+            field: 'last_updated_at',
+            severity: r.severity || 'low',
+            reason: `Record is stale. Last updated ${Math.round(ageDays)} days ago (limit is 90).`,
+            current_value: action.record.last_updated_at
+        }
     }
     return null
   }

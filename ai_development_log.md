@@ -1743,3 +1743,29 @@ All AI-generated code and architectural modules were subjected to a rigorous fou
    - Designing strict Human-In-The-Loop (HITL) safeguards ensuring AI cannot silently mutate data.
    - Diagnosing low-level browser rendering issues (WebGL canvas sizing, React DOM virtualization).
    - Establishing hardened security perimeters against privilege escalation and injection attacks.
+
+---
+
+## 7. QA Audit & Bug Resolutions (Agentic QA Pass)
+
+During an intensive QA pass, the following critical data integrity vulnerabilities were identified and resolved by the AI agent:
+
+### 1. Silent Data Coercion (Zod Schema Strictness)
+* **Bug Found:** The `z.coerce.number()` schema for financial fields (like principal balance and interest rate) implicitly converted empty strings `""` to `0` without throwing a validation error, potentially mutating bad data silently.
+* **Resolution:** Implemented a custom `strictNumber` preprocessor that rejects implicit coercions and enforced `.min()` bounds and strict string regex matches for timestamps. Reverted optional fields (e.g., `payment_status`) to correctly allow empty states without failing compliant tapes.
+
+### 2. Malformed Date Handling & Negative Balances (Policy Engine)
+* **Bug Found:** The policy engine propagated `NaN` silently when evaluating stale records with missing timestamps, rather than flagging an explicit formatting error. Additionally, negative current balances were missed.
+* **Resolution:** Rewrote timestamp validation to check `isNaN(date.getTime())` and explicitly handle missing optional date fields. Expanded balance checks to validate both `principal_balance` and `current_balance`.
+
+### 3. Pipeline Short-Circuit on Duplicates (`src/routes.js`)
+* **Bug Found:** When evaluating multi-source tapes, finding a duplicate loan ID executed a `continue` statement that skipped all subsequent risk checks for that loan, hiding critical secondary violations (e.g., negative balances or cross-source conflicts).
+* **Resolution:** Replaced the loop bypass (`continue`) with `checks.push()`, ensuring duplicates still undergo the full battery of compliance checks.
+
+### 4. Human Override Tampering Vulnerability
+* **Bug Found:** Reviewers could use the single-field manual resolution endpoint (`PATCH /api/exceptions/:id`) to forcefully inject corrupt data, bypassing schema validation and breaking downstream consumers.
+* **Resolution:** Wrapped the exception resolution payload in a strict `LoanSchema.safeParse` interceptor. All human edits are now mathematically validated against the same ruleset as the primary ingestion pipeline before database persistence.
+
+### 5. Cryptographic Hashing Logic
+* **Bug Found:** The canonical hash generator for the audit log relied on a fragile string concatenation of specific fields, omitting new or optional fields and breaking the SHA-256 chain's integrity guarantee.
+* **Resolution:** Refactored the `verified_hash` generator to serialize the entire loan object (stripping internal metadata) before hashing, ensuring robust and tamper-evident audit trails.

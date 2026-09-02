@@ -111,6 +111,9 @@ async function runQaTests() {
 
   const t1 = await uploadCsv(cleanTempPath, 'Clean Baseline Tape (100% compliant)');
   console.log(`   Result: HTTP ${t1.status} | Processed: ${t1.data.recordsProcessed || 0} | Valid: ${t1.data.validCount || 0} | Exceptions: ${t1.data.exceptionCount || 0}`);
+  if (t1.data.exceptionCount > 0) {
+    console.log('   First failure:', JSON.stringify(t1.data.import_report?.failed_rows?.[0], null, 2));
+  }
   const passed = t1.status === 200 && t1.data.success && t1.data.validCount === 500 && t1.data.exceptionCount === 0;
   results.push({ name: 'Clean Baseline Tape (500 Valid, 0 Exceptions)', passed, details: t1.data });
   console.log(`   Status: ${passed ? '✅ PASS' : '❌ FAIL'}\n`);

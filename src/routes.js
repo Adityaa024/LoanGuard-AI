@@ -8,6 +8,7 @@ import { buildSystem } from './system.js'
 import { parse } from 'csv-parse/sync'
 import { getDb } from './db/index.js'
 import Anthropic from '@anthropic-ai/sdk'
+import { LoanSchema } from './guard/schema.js'
 
 let anthropicClient = null
 if (process.env.ANTHROPIC_API_KEY) {
@@ -355,41 +356,26 @@ export async function registerRoutes(app, { ROOT }) {
             const isDuplicate = existingLoanIds.has(record.loan_id) || batchSeenIds.has(record.loan_id)
             batchSeenIds.add(record.loan_id)
 
-            if (isDuplicate) {
-              exceptionCount++
-              failedRows.push({
-                row_number: i + 2,
-                loan_id: record.loan_id,
-                borrower_name: record.borrower_name,
-                field: 'loan_id',
-                severity: 'critical',
-                rule_id: 'POL-DUP-001',
-                rule_name: 'duplicate_loan',
-                reason: `Duplicate Loan ID detected: ${record.loan_id}`,
-                current_value: record.loan_id
-              })
-
-              await db.run(`
-                INSERT INTO loans (id, upload_batch_id, loan_id, borrower_id, borrower_name, property_state, principal_balance, original_principal, current_balance, interest_rate, origination_date, maturity_date, term_months, loan_purpose, payment_status, days_past_due, document_status, loan_status, last_updated_at, source_system, validation_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-              `, [
-                internalId, batchId, record.loan_id, record.borrower_id, record.borrower_name, record.property_state, record.principal_balance, record.original_principal, record.current_balance, record.interest_rate, record.origination_date, record.maturity_date, record.term_months, record.loan_purpose, record.payment_status, record.days_past_due, record.document_status, record.loan_status, record.last_updated_at, record.source_system,
-                'has_exceptions'
-              ])
-              await db.run(`
-                INSERT INTO exceptions (id, loan_id, rule_id, rule_name, field, severity, description, current_value)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-              `, [
-                'exc_' + crypto.randomUUID(), internalId, 'POL-DUP-001', 'duplicate_loan', 'loan_id', 'critical', `Duplicate Loan ID detected: ${record.loan_id}`, record.loan_id
-              ])
-              continue
-            }
-
             // Evaluate with the Policy Engine
             const evalResult = engine.evaluate(
               { type: 'ingest_loan_record', record },
               { existingLoanIds, batchSeenIds, borrowerCombos, existingLoanMap }
             )
+
+            // Manually append duplicate check to evalResult
+            let checks = Array.isArray(evalResult.checks) ? evalResult.checks : [];
+            if (isDuplicate) {
+               checks.push({
+                 policyId: 'POL-DUP-001',
+                 rule: 'duplicate_loan',
+                 field: 'loan_id',
+                 severity: 'critical',
+                 reason: `Duplicate Loan ID detected: ${record.loan_id}`,
+                 outcome: 'deny'
+               });
+               evalResult.decision = 'deny';
+            }
+            evalResult.checks = checks;
 
             const isException = evalResult.decision === 'escalate' || evalResult.decision === 'deny'
             if (isException) {
@@ -921,7 +907,8 @@ export async function registerRoutes(app, { ROOT }) {
       const systemPrompt = "You are a senior structured finance and mortgage underwriting AI copilot. Diagnose loan tape exceptions, verify statutory underwriting policies, identify root cause, and propose safe remediation."
       const userPrompt = `Analyze exception ${exc.rule_id} (${exc.rule_name || ''}) on field '${exc.field}' with value "${exc.current_value}". Loan ID: ${exc.loan_id}. Description: ${exc.description || ''}.`
 
-      let modelName = 'claude-3-5-sonnet (High-Fidelity Copilot Simulation)'
+      let modelName = 'Deterministic Rules Engine (Fallback)'
+      confidence = 1.0
       let tokensUsed = Math.round((systemPrompt.length + userPrompt.length + explanation.length) / 4)
 
       // If Anthropic API key is provided, execute real model inference
@@ -1459,7 +1446,14 @@ export async function registerRoutes(app, { ROOT }) {
         if (remaining.count === 0) {
           const loanRecord = await db.get(`SELECT * FROM loans WHERE id = ?`, [exc.loan_id])
           if (loanRecord) {
-            const canonicalString = `${loanRecord.loan_id}|${loanRecord.borrower_name}|${loanRecord.principal_balance}|${loanRecord.interest_rate}|${loanRecord.origination_date}|${loanRecord.maturity_date}`
+            const loanObjToHash = { ...loanRecord }
+            delete loanObjToHash.verified_by
+            delete loanObjToHash.verified_at
+            delete loanObjToHash.verified_hash
+            delete loanObjToHash.validation_status
+            delete loanObjToHash.is_verified
+            delete loanObjToHash.reviewer_decision
+            const canonicalString = JSON.stringify(loanObjToHash)
             const recordHash = crypto.createHash('sha256').update(canonicalString).digest('hex')
             await db.run(`
               UPDATE loans 
@@ -1509,11 +1503,12 @@ export async function registerRoutes(app, { ROOT }) {
       if (!exc) return res.status(404).json({ success: false, error: 'Exception not found' })
       if (exc.status !== 'open') return res.status(400).json({ success: false, error: 'Exception is already resolved' })
 
+      const newStatus = effectiveAction === 'reject' ? 'rejected' : 'resolved'
       const updateRes = await db.run(`
         UPDATE exceptions 
-        SET status = 'resolved', resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, resolution_note = ?
+        SET status = ?, resolved_at = CURRENT_TIMESTAMP, resolved_by = ?, resolution_note = ?
         WHERE id = ? AND status = 'open'
-      `, [req.user.name, sanitizedNote, req.params.id])
+      `, [newStatus, req.user.name, sanitizedNote, req.params.id])
 
       if (updateRes.changes === 0) {
         return res.status(400).json({ success: false, error: 'Exception is already resolved or being modified concurrently' })
@@ -1538,6 +1533,12 @@ export async function registerRoutes(app, { ROOT }) {
         // Whitelist field to prevent SQL injection
         const allowedFields = ['loan_id', 'borrower_id', 'borrower_name', 'property_state', 'principal_balance', 'original_principal', 'current_balance', 'interest_rate', 'origination_date', 'maturity_date', 'term_months', 'loan_purpose', 'payment_status', 'days_past_due', 'document_status', 'loan_status', 'last_updated_at', 'source_system']
         if (allowedFields.includes(exc.field)) {
+          const existingLoan = await db.get(`SELECT * FROM loans WHERE id = ?`, [exc.loan_id])
+          const modifiedLoan = { ...existingLoan, [exc.field]: corrected_value }
+          const parseResult = LoanSchema.safeParse(modifiedLoan)
+          if (!parseResult.success) {
+            return res.status(400).json({ success: false, error: 'Validation failed: ' + parseResult.error.issues[0].message })
+          }
           await db.run(`UPDATE loans SET ${exc.field} = ?, reviewer_decision = ?, ai_recommendation = ? WHERE id = ?`, 
             [corrected_value, effectiveAction, exc.ai_explanation || null, exc.loan_id])
         }
@@ -1582,17 +1583,15 @@ export async function registerRoutes(app, { ROOT }) {
             }
 
             const crypto = await import('node:crypto')
-            const hashPayload = JSON.stringify({
-              loan_id: loanData.loan_id,
-              borrower_name: loanData.borrower_name,
-              principal_balance: loanData.principal_balance,
-              interest_rate: loanData.interest_rate,
-              origination_date: loanData.origination_date,
-              maturity_date: loanData.maturity_date,
-              verified_by: req.user.name,
-              timestamp: Date.now()
-            })
-            const hash = crypto.createHash('sha256').update(hashPayload).digest('hex')
+            const loanObjToHash = { ...loanData }
+            delete loanObjToHash.verified_by
+            delete loanObjToHash.verified_at
+            delete loanObjToHash.verified_hash
+            delete loanObjToHash.validation_status
+            delete loanObjToHash.is_verified
+            delete loanObjToHash.reviewer_decision
+            const canonicalString = JSON.stringify(loanObjToHash)
+            const hash = crypto.createHash('sha256').update(canonicalString).digest('hex')
             await db.run(`UPDATE loans SET validation_status = 'verified', is_verified = 1, verified_at = CURRENT_TIMESTAMP, verified_hash = ?, verified_by = ? WHERE id = ?`, [hash, req.user.name, exc.loan_id])
             
             await audit.append({
