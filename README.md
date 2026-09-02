@@ -35,7 +35,7 @@ In private debt securitization, structured finance, and secondary loan trading, 
 
 ---
 
-### 2. Warden Validation Policy Engine (12 Deterministic Rules)
+### 2. Warden Validation Policy Engine (15 Deterministic Rules)
 *Declarative policy catalog detailing mathematical invariants, date checks, interest corridors, and severity levels.*
 ![Warden Policy Catalog](./docs/images/screenshot_2.png)
 
@@ -220,6 +220,8 @@ d:/intain/
 | **6** | **Severity Classification Assistant** | `POST /api/ai/classify-severity` | Assesses potential financial exposure and classifies risk (Critical, High, Medium, Low). |
 | **7** | **Natural Language Policy Compiler** | `POST /api/ai/generate-rule` | Compiles English policy rules (e.g. *"Block loans with rate > 18.5%"*) into structured YAML rules. |
 
+> **Note on AI Architecture:** For demonstration reliability and zero-latency execution, the AI Copilot features currently run in a deterministic, offline simulation mode (`routes.js`). This allows reviewers to experience the complete AI workflow without requiring active Anthropic API keys or internet access.
+
 ---
 
 ## 👥 Built-In Personas & 1-Click Launchpad
@@ -245,7 +247,7 @@ cd LoanGuard-AI
 # Install backend dependencies
 npm install
 
-# Build frontend production bundle
+# Build frontend production bundle (Note: Compiling the 3D WebGL assets may take an extra minute)
 npm run build:web
 ```
 
