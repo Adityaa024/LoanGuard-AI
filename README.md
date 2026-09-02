@@ -57,6 +57,28 @@ In private debt securitization, structured finance, and secondary loan trading, 
 *Auditable sequential block ledger verifying the complete lifecycle of a loan from raw ingestion to reviewer sign-off.*
 ![Cryptographic Proof and Lineage](./docs/images/screenshot_5.png)
 
+### 6. Exception Findings Breakdown
+*Real-time donut chart visualizing portfolio exceptions by critical, high, medium, and low severity.*
+![Exception Findings Breakdown](./docs/images/screenshot_6.png)
+
+---
+
+### 7. Policy Verification Engine Modal
+*Interactive catalog detailing active statutory compliance rules enforcing mathematical invariants and data sanity.*
+![Policy Verification Engine](./docs/images/screenshot_7.png)
+
+---
+
+### 8. AI Cluster Diagnostics Summary
+*Executive briefing on portfolio-wide exception clusters with one-click batch auto-remediation plans.*
+![AI Cluster Diagnostics Summary](./docs/images/screenshot_8.png)
+
+---
+
+### 9. AI Diagnostics Copilot Root Cause Explanation
+*Detailed root-cause analysis for specific exceptions, offering deterministic repair suggestions and an immutable reviewer audit trail.*
+![AI Diagnostics Copilot Root Cause Explanation](./docs/images/screenshot_9.png)
+
 ---
 
 ## 📋 Problem Statement Compliance Matrix (Modules A–H)
