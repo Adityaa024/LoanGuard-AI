@@ -5,7 +5,7 @@
 > **Enterprise-Grade Full-Stack Implementation for the Loan Data Verification Challenge**  
 > An enterprise-grade platform for financial asset verification.
 >
-> 🟢 **Live Demo Deployment:** [https://loanguard-ai-production.up.railway.app](https://loanguard-ai-production.up.railway.app)
+> 🟢 **Live Demo Deployment:** [https://loanguard-ai-uql9.onrender.com](https://loanguard-ai-uql9.onrender.com)
 
 ---
 
