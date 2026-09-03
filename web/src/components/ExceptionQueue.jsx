@@ -914,7 +914,7 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
   const resolveAction = async (action) => {
     setBusy(true);
     try {
-      const finalValueToSend = draftValue !== null ? draftValue : (exc.suggested_value || exc.current_value);
+      const finalValueToSend = draftValue !== null ? draftValue : exc.current_value;
       const token = localStorage.getItem('loanguard_token');
       const res = await fetch(`/api/exceptions/${exc.id}`, {
         method: 'PATCH',
@@ -1048,7 +1048,10 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
                   </button>
                 )}
                 <button 
-                  onClick={() => setEditMode(!editMode)}
+                  onClick={() => {
+                    if (draftValue === null) setDraftValue(exc.current_value || '');
+                    setEditMode(!editMode);
+                  }}
                   className="text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1 cursor-pointer"
                 >
                   <Edit3 className="w-2.5 h-2.5" />
@@ -1339,9 +1342,10 @@ function ReviewerWorkbench({ exc, onResolved, onNext, onPrev, hasNext, hasPrev, 
           </button>
 
           <button 
-            className="btn-primary text-xs py-2.5 px-4 flex-2 justify-center shadow-emerald-500/15 cursor-pointer disabled:opacity-50" 
+            className="btn-primary text-xs py-2.5 px-4 flex-2 justify-center shadow-emerald-500/15 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" 
             onClick={() => resolveAction('approve')} 
-            disabled={busy}
+            disabled={busy || draftValue === null}
+            title={draftValue === null ? "Requires explicit reviewer decision (Accept AI or Edit manually)" : "Approve and verify exception"}
           >
             {busy ? (
               <div className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full"></div>

@@ -80,7 +80,7 @@ The architecture must support 75,000+ loans with sub-10ms query times using SQLi
 
 Define the data models:
 1. `upload_batches`: Tracks batch ID, filename, SHA-256 file_hash, uploaded_by, uploaded_at, total_records, status.
-2. `loans`: Canonical representation storing 30+ securitization fields (loan_id, borrower_name, property_address, principal_balance, interest_rate, origination_date, maturity_date, payment_status, days_past_due, document_status, source_system, validation_status, is_verified, verified_at, verified_by, verified_hash).
+2. `loans`: Canonical representation storing 30+ core financial fields (loan_id, borrower_name, property_address, principal_balance, interest_rate, origination_date, maturity_date, payment_status, days_past_due, document_status, source_system, validation_status, is_verified, verified_at, verified_by, verified_hash).
 3. `exceptions`: Quarantined violations linking loan_id, rule_id, rule_name, field, severity, description, current_value, suggested_value, ai_explanation, status, resolved_at, resolved_by, resolution_note.
 4. `audit_logs`: Immutable ledger storing seq, agentId, actionType, loanId, policyId, rule, decision, amount, reason, authorizer, ts, prevHash, hash, details.
 

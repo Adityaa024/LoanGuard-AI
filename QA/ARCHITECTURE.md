@@ -1,6 +1,6 @@
 # 🏛️ LoanGuard-AI — System Architecture & Forensic Specification
 
-**Target Product:** LoanGuard-AI (Loan Tape Securitization & Continuous Verification Copilot)  
+**Target Product:** LoanGuard-AI (Loan Tape Continuous Verification Copilot)  
 **Track:** Intain Campus FinTech Challenge 2026 (Full Stack Track)  
 **Inspection Date:** August 31, 2026  
 **Auditor:** Principal QA & Security Engineering Group  

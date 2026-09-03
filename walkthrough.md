@@ -1,6 +1,6 @@
 # 🎨 LoanGuard-AI — System Walkthrough & Feature Guide
 
-**Platform:** LoanGuard-AI — Intelligent Loan Tape Securitization & Continuous Verification Copilot  
+**Platform:** LoanGuard-AI — Intelligent Loan Tape Continuous Verification Copilot  
 **Architecture:** Multi-Persona Role-Based Workflow (Data Operator, Exception Reviewer, Data Consumer)  
 **Security & Audit:** Tamper-Evident SHA-256 Hash Chain & Strict Zod Schema Enforcement  
 

@@ -3,7 +3,7 @@
 ## Intain Full-Stack Engineering Challenge: Loan Data Verification Copilot
 
 ### 1. Problem Context
-In private debt securitization, structured finance, and secondary loan trading, loan tape accuracy is critical. Raw loan tapes from originating servicers frequently contain formatting defects, mathematical inconsistencies, inverted date fields, and conflicting reports. Manual reconciliation is slow, error-prone, and leaves portfolios vulnerable to regulatory audit penalties.
+In private debt structured finance, and secondary loan trading, loan tape accuracy is critical. Raw loan tapes from originating servicers frequently contain formatting defects, mathematical inconsistencies, inverted date fields, and conflicting reports. Manual reconciliation is slow, error-prone, and leaves portfolios vulnerable to regulatory audit penalties.
 
 ### 2. LoanGuard-AI Objective
 LoanGuard-AI is an end-to-end intelligent loan tape verification platform featuring:
@@ -11,7 +11,7 @@ LoanGuard-AI is an end-to-end intelligent loan tape verification platform featur
 2. **Deterministic Policy & Schema Engine:** Enforces strict boundary rules (negative balances, usury rates, cross-date validity, state postal codes).
 3. **AI Diagnostic Copilot:** Explains anomalies in plain language, proposes verified corrected values, and clusters recurring error patterns.
 4. **Governed Human-in-the-Loop Workflow:** Enables reviewers to accept, override, or batch-resolve exceptions with cryptographic audit signatures.
-5. **Tamper-Evident SHA-256 Audit Trail:** Maintains an unbroken cryptographic hash chain for institutional securitization audit readiness.
+5. **Tamper-Evident SHA-256 Audit Trail:** Maintains an unbroken cryptographic hash chain for institutional audit readiness.
 
 ---
 

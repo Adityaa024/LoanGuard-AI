@@ -555,10 +555,12 @@ export async function registerRoutes(app, { ROOT }) {
       const resolvedExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'resolved'`)).count
       const uploadsCount = (await db.get(`SELECT COUNT(*) as count FROM upload_batches`)).count
       
-      // Clean records = valid + verified unique loans
-      const cleanRecords = validLoans + verifiedLoans
-      // Affected records = unique loans with open exceptions
+      // Affected records = exactly the unique loans with open exceptions
       const affectedRecords = (await db.get(`SELECT COUNT(DISTINCT loan_id) as count FROM exceptions WHERE status = 'open'`)).count || exceptionLoans
+      
+      // To ensure perfect mathematical reconciliation (total = clean + affected),
+      // we derive cleanRecords directly from totalLoans - affectedRecords.
+      const cleanRecords = totalLoans - affectedRecords
       
       // Real severity breakdown from DB (open exceptions findings)
       const criticalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'critical'`)).count
@@ -1211,7 +1213,7 @@ export async function registerRoutes(app, { ROOT }) {
       const topCluster = clusterBreakdown[0]
       const suggestedAction = topCluster 
         ? topCluster.severity === 'critical'
-          ? `Priority 1: Isolate and manually inspect ${topCluster.count} '${topCluster.rule_name}' records before pool securitization.`
+          ? `Priority 1: Isolate and manually inspect ${topCluster.count} '${topCluster.rule_name}' records before pool verification.`
           : `Batch-remediate ${topCluster.count} '${topCluster.rule_name}' items across loans: ${topCluster.sample_loans.slice(0, 3).join(', ')}...`
         : 'All exception queues clear.'
 
