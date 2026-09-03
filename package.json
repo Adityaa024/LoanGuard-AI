@@ -1,7 +1,7 @@
 {
   "name": "loanguard-ai",
   "version": "2.4.0",
-  "description": "LoanGuard-AI — Intelligent Loan Tape Securitization & Continuous Verification Copilot",
+  "description": "LoanGuard-AI — Intelligent Loan Tape Verification & Continuous Governance Copilot",
   "type": "module",
   "license": "Apache-2.0",
   "engines": {

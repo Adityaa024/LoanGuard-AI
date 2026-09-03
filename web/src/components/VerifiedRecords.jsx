@@ -843,7 +843,7 @@ function ApiIntegrationModal({ onClose }) {
 
         <div className="p-6 space-y-4">
           <p className="text-xs text-slate-600">
-            Downstream consuming systems (portfolio analytics, underwriter feeds, capital markets) can stream canonical verified loan data directly using JWT authentication:
+            Downstream systems can stream canonical verified loan data directly using JWT authentication:
           </p>
 
           <div className="relative">

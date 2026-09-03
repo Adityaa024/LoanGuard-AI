@@ -57,7 +57,7 @@ export default function LoginView({ onLoginSuccess }) {
   const slides = [
     {
       title: 'Welcome back!',
-      subtitle: 'Manage your loan tape verification pipeline with institutional-grade precision.',
+      subtitle: 'Manage your loan tape verification pipeline with enterprise-grade precision.',
       detail: 'Real-time ingestion, AI-powered anomaly detection, and cryptographic audit trails.',
     },
     {
@@ -66,9 +66,9 @@ export default function LoginView({ onLoginSuccess }) {
       detail: 'SHA-256 signed records ensure tamper-proof data lineage across every field.',
     },
     {
-      title: 'Enterprise Grade',
-      subtitle: 'Role-based access control with 3 specialized dashboard personas.',
-      detail: 'SOC-2 compliant workflows with full audit trail for statutory compliance and institutional governance.',
+      title: 'Secure Operations',
+      subtitle: 'Manage your loan tape verification pipeline with precision.',
+      detail: 'SOC-2 compliant workflows with full audit trail for data governance.',
     }
   ];
 
