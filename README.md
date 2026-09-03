@@ -1,4 +1,4 @@
-# 🏦 LoanGuard-AI — Intelligent Loan Tape Securitization & Continuous Verification Copilot
+# 🏦 LoanGuard-AI — Turning Messy Loan Tapes into Trusted, Auditable Data
 
 ![LoanGuard-AI Banner](./docs/images/Gemini_Generated_Image_3i5aoo3i5aoo3i5a.png)
 
