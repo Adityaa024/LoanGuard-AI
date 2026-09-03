@@ -182,14 +182,68 @@ LN-INST-110_${tag},Amina Patel,12/01/2023,12/01/2053,500000,490000,5.20,2745.30,
         `LN-ADV05_${tag},Bad Date Dave,01/01/2025,01/01/2020,100000,95000,4.0,500,Current,Condo,CA,80,700,90210`,
         `LN-ADV06_${tag},Bad State Stan,01/01/2020,01/01/2050,100000,95000,4.0,500,Current,Condo,california,80,700,90210`,
       ].join('\n');
-    } else if (type === 'large_messy') {
-      fileName = `large_messy_tape_3000_${tag}.csv`;
+    } else if (type === 'large_messy' || type === 'large_5k') {
+      fileName = `large_5k_loan_tape_${tag}.csv`;
       setSourceType('primary_tape');
+      
+      let loadedValidData = false;
       try {
-        const res = await fetch('/large_messy_loan_tape.csv');
-        csvContent = await res.text();
+        const res = await fetch('/large_5k_loan_tape.csv');
+        if (res.ok) {
+          const text = await res.text();
+          // Ensure it's not the Vite SPA HTML fallback and contains proper CSV headers
+          if (text && !text.trim().startsWith('<') && text.includes('loan_id') && text.split('\n').length >= 1000) {
+            csvContent = text;
+            loadedValidData = true;
+          }
+        }
       } catch {
-        csvContent = 'loan_id,borrower_name,origination_date,maturity_date,principal_balance,current_balance,interest_rate,monthly_payment,loan_status,property_type,property_state,ltv_ratio,credit_score,zip_code\n';
+        loadedValidData = false;
+      }
+
+      if (!loadedValidData) {
+        // High-performance deterministic generator for 5,000 stress records with Section 7 anomalies
+        const headers = 'loan_id,borrower_name,origination_date,maturity_date,principal_balance,current_balance,interest_rate,monthly_payment,loan_status,property_type,property_state,ltv_ratio,credit_score,zip_code';
+        const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda', 'David', 'Elizabeth', 'William', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen'];
+        const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Taylor', 'Moore', 'Jackson', 'Lee', 'Perez'];
+        const states = ['CA', 'NY', 'TX', 'FL', 'WA', 'IL', 'PA', 'OH', 'GA', 'NC', 'MI', 'NJ', 'VA', 'AZ', 'MA', 'TN', 'IN', 'MO', 'CO', 'MN'];
+        const invalidStates = ['california', 'newyork', 'texas', 'XX', 'ZZ', '99'];
+        const propTypes = ['Single Family', 'Condo', 'Townhouse', 'Multi Family', 'Commercial'];
+        const statuses = ['Current', '30 Days Delinquent', '60 Days Delinquent', '90+ Days Delinquent', 'Paid Off', 'Default'];
+
+        const rows = new Array(5000);
+        const seen = [];
+
+        for (let i = 1; i <= 5000; i++) {
+          let loanId = `LN-5K-${tag}-${10000 + i}`;
+          let borrower = `${firstNames[i % firstNames.length]} ${lastNames[(i * 7) % lastNames.length]}`;
+          let orig = '01/15/2022';
+          let mat = '01/15/2052';
+          let principal = 200000 + ((i * 123) % 400000);
+          let current = Math.round(principal * 0.92);
+          let rate = (4.25 + ((i % 15) * 0.25)).toFixed(2);
+          let pmt = Math.round(principal * 0.005);
+          let st = statuses[i % statuses.length];
+          let pt = propTypes[i % propTypes.length];
+          let state = states[i % states.length];
+          let ltv = 60 + (i % 35);
+          let score = 640 + (i % 160);
+          let zip = String(10000 + (i * 17) % 89999);
+
+          // Section 7 intentional statutory anomalies
+          if (i % 100 === 10) loanId = ''; // Missing Loan ID
+          else if (i % 100 === 20) principal = -Math.abs(principal); // Negative balance
+          else if (i % 100 === 30) rate = '-3.50'; // Negative interest rate
+          else if (i % 100 === 40) rate = '38.50'; // Usurious interest rate > 25%
+          else if (i % 100 === 50) borrower = ''; // Missing borrower name
+          else if (i % 100 === 60) mat = '01/15/2018'; // Inverted dates
+          else if (i % 100 === 70) state = invalidStates[i % invalidStates.length]; // Invalid state code
+          else if (i % 100 === 80 && seen.length > 5) loanId = seen[seen.length - 3]; // Duplicate loan ID within batch
+
+          if (loanId) seen.push(loanId);
+          rows[i - 1] = `${loanId},${borrower},${orig},${mat},${principal},${current},${rate},${pmt},${st},${pt},${state},${ltv},${score},${zip}`;
+        }
+        csvContent = `${headers}\n${rows.join('\n')}`;
       }
     } else if (type === 'servicer_update') {
       fileName = `servicer_update_${tag}.csv`;
@@ -218,7 +272,11 @@ LN-INST-110_${tag},Amina Patel,12/01/2023,12/01/2053,500000,490000,5.20,2745.30,
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const fakeFile = new File([blob], fileName, { type: 'text/csv' });
     setFile(fakeFile);
+    const sizeKb = (fakeFile.size / 1024).toFixed(1);
+    const countLabel = (type === 'large_messy' || type === 'large_5k') ? ' (5,000 Stress Records)' : '';
+    toast.success("Dataset Loaded", `Attached ${fileName}${countLabel} (${sizeKb} KB)`);
   };
+
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);

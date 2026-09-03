@@ -144,13 +144,34 @@ function generateLargeMessyTape(totalRecords = 3000) {
   }
 
   const csv = [headers.join(','), ...rows].join('\n');
-  fs.writeFileSync(OUTPUT_PATH, csv, 'utf8');
+  
+  const targetPaths = [
+    OUTPUT_PATH,
+    path.join(__dirname, '..', 'data', 'large_5k_loan_tape.csv'),
+    path.join(__dirname, '..', 'public', 'large_messy_loan_tape.csv'),
+    path.join(__dirname, '..', 'public', 'large_5k_loan_tape.csv'),
+    path.join(__dirname, '..', 'web', 'public', 'large_messy_loan_tape.csv'),
+    path.join(__dirname, '..', 'web', 'public', 'large_5k_loan_tape.csv'),
+    path.join(__dirname, '..', 'web', 'dist', 'large_messy_loan_tape.csv'),
+    path.join(__dirname, '..', 'web', 'dist', 'large_5k_loan_tape.csv')
+  ];
 
-  console.log(`Generated ${totalRecords} records to ${OUTPUT_PATH}`);
+  for (const p of targetPaths) {
+    try {
+      const dir = path.dirname(p);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(p, csv, 'utf8');
+      console.log(`Wrote ${totalRecords} records to ${p}`);
+    } catch (err) {
+      console.warn(`Could not write to ${p}:`, err.message);
+    }
+  }
+
   console.log('Anomaly Injections Summary:', anomalyCounters);
   const totalAnomalies = Object.values(anomalyCounters).reduce((a, b) => a + b, 0);
   console.log(`Total Expected Exceptions: ${totalAnomalies} (~${((totalAnomalies / totalRecords) * 100).toFixed(1)}% exception rate)`);
   console.log(`Expected Clean Records: ${totalRecords - totalAnomalies} (~${(((totalRecords - totalAnomalies) / totalRecords) * 100).toFixed(1)}% clean rate)`);
 }
 
-generateLargeMessyTape(3000);
+generateLargeMessyTape(5000);
+
