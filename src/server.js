@@ -53,6 +53,7 @@ try {
   console.log('[server] API routes mounted successfully')
 } catch (e) {
   console.error('[server] CRITICAL: Failed to mount routes.js:', e)
+  process.exit(1)
 }
 
 // API 404 Handler (Any /api/* route that was not matched above must return JSON 404, not HTML)

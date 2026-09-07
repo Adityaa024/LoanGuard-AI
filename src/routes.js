@@ -99,6 +99,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
   const sys = buildSystem()
   const { orchestrator, guard, audit, events, ledger, backend } = sys
+  await ledger.ready
   const engine = backend
 
   // ---- Live event stream (SSE) ----

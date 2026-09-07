@@ -42,17 +42,15 @@ export class Ledger {
     }
     this.exceptions = [] // reconciliation mismatches routed here (RUBRIC 12)
     
-    // Seed database asynchronously
-    if (loans.length > 0) {
-      this._syncToDb()
-    }
+    // Expose startup completion so the HTTP server can wait for the seed.
+    this.ready = loans.length > 0 ? this._syncToDb() : Promise.resolve()
   }
 
   async _syncToDb() {
     try {
       const { getDb } = await import('../db/index.js')
       const db = await getDb()
-      const batchId = `batch_${Date.now()}`
+      const batchId = 'seed_data'
       
       await db.run(`INSERT OR IGNORE INTO upload_batches (id, filename, uploaded_by) VALUES (?, ?, ?)`, 
         [batchId, 'seed_data.csv', 'system'])

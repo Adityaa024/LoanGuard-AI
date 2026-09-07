@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const DB_PATH = path.join(__dirname, '..', '..', 'data', 'database.sqlite')
+const DEFAULT_DB_PATH = path.join(__dirname, '..', '..', 'data', 'database.sqlite')
+const DB_PATH = process.env.DB_PATH || DEFAULT_DB_PATH
 
 let dbInstance = null
 
@@ -16,6 +17,12 @@ export async function getDb() {
   const dataDir = path.dirname(DB_PATH)
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true })
+  }
+
+  // On the first boot with a Render disk, preserve the packaged demo database.
+  // Never overwrite an existing persistent database during a deploy.
+  if (DB_PATH !== DEFAULT_DB_PATH && !fs.existsSync(DB_PATH) && fs.existsSync(DEFAULT_DB_PATH)) {
+    fs.copyFileSync(DEFAULT_DB_PATH, DB_PATH)
   }
 
   dbInstance = await open({
