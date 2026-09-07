@@ -474,9 +474,6 @@ export async function registerRoutes(app, { ROOT }) {
           failed_rows: failedRows
         }
       }
-    } catch (e) {
-      throw e
-    }
   }
 
   const handleMultiSourceUpload = async (req, res) => {
