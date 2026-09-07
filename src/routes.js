@@ -505,52 +505,52 @@ export async function registerRoutes(app, { ROOT }) {
   }
 
   // ---- Startup Auto-Seeder for Empty Cloud Deployments (e.g. Render) ----
-  (async () => {
-    try {
-      const db = await getDb()
-      const row = await db.get(`SELECT COUNT(*) as count FROM loans`)
-      if (!row || row.count === 0) {
-        console.log('[seeder] Empty database detected on boot. Auto-seeding baseline demo datasets...')
-        const seedFiles = [
-          { rel: 'data/qa/clean_loans.csv', type: 'primary_tape' },
-          { rel: 'data/qa/sample_ui_test_tape.csv', type: 'primary_tape' },
-          { rel: 'data/qa/malicious_loans.csv', type: 'primary_tape' },
-          { rel: 'data/servicer_update.csv', type: 'servicer_update' },
-          { rel: 'data/document_manifest.csv', type: 'document_manifest' }
-        ]
-        for (const sf of seedFiles) {
-          const fullPath = path.join(ROOT, sf.rel)
-          if (fs.existsSync(fullPath)) {
-            const buf = fs.readFileSync(fullPath)
-            await processCsvBuffer({
-              fileBuffer: buf,
-              originalname: path.basename(fullPath),
-              requestedSourceType: sf.type,
-              username: 'System Auto-Seeder',
-              forceUpload: true
-            })
-          }
+  try {
+    const db = await getDb()
+    const row = await db.get(`SELECT COUNT(*) as count FROM loans`)
+    if (!row || row.count === 0) {
+      console.log('[seeder] Empty database detected on boot. Auto-seeding baseline demo datasets...')
+      const seedFiles = [
+        { rel: 'data/qa/clean_loans.csv', type: 'primary_tape' },
+        { rel: 'data/qa/sample_ui_test_tape.csv', type: 'primary_tape' },
+        { rel: 'data/qa/malicious_loans.csv', type: 'primary_tape' },
+        { rel: 'data/qa/massive_loans.csv', type: 'primary_tape' },
+        { rel: 'data/servicer_update.csv', type: 'servicer_update' },
+        { rel: 'data/document_manifest.csv', type: 'document_manifest' }
+      ]
+      for (const sf of seedFiles) {
+        const fullPath = path.join(ROOT, sf.rel)
+        if (fs.existsSync(fullPath)) {
+          const buf = fs.readFileSync(fullPath)
+          await processCsvBuffer({
+            fileBuffer: buf,
+            originalname: path.basename(fullPath),
+            requestedSourceType: sf.type,
+            username: 'System Auto-Seeder',
+            forceUpload: true
+          })
         }
-        // Auto-resolve 3 sample exceptions so Data Consumer has verified records out of the box
-        const excs = await db.all(`SELECT id, loan_id, suggested_value FROM exceptions WHERE status = 'open' LIMIT 3`)
-        for (const e of excs) {
-          await db.run(`
-            UPDATE exceptions 
-            SET status = 'resolved', suggested_value = ?, resolved_at = CURRENT_TIMESTAMP, resolved_by = 'Rajesh Menon', resolution_note = 'Approved during initial deployment setup' 
-            WHERE id = ?
-          `, [e.suggested_value || '4.50', e.id])
-          await db.run(`
-            UPDATE loans 
-            SET validation_status = 'verified', is_verified = 1, verified_at = CURRENT_TIMESTAMP, verified_by = 'Rajesh Menon', reviewer_decision = 'approved' 
-            WHERE id = ?
-          `, [e.loan_id])
-        }
-        console.log('[seeder] Baseline demo datasets successfully seeded into database.')
       }
-    } catch (err) {
-      console.warn('[seeder] Startup auto-seed note:', err.message)
+      // Auto-resolve 5 sample exceptions so Data Consumer has verified records out of the box
+      const excs = await db.all(`SELECT id, loan_id, suggested_value FROM exceptions WHERE status = 'open' LIMIT 5`)
+      for (const e of excs) {
+        await db.run(`
+          UPDATE exceptions 
+          SET status = 'resolved', suggested_value = ?, resolved_at = CURRENT_TIMESTAMP, resolved_by = 'Rajesh Menon', resolution_note = 'Approved during initial deployment setup' 
+          WHERE id = ?
+        `, [e.suggested_value || '4.50', e.id])
+        await db.run(`
+          UPDATE loans 
+          SET validation_status = 'verified', is_verified = 1, verified_at = CURRENT_TIMESTAMP, verified_by = 'Rajesh Menon', reviewer_decision = 'approved' 
+          WHERE id = ?
+        `, [e.loan_id])
+      }
+      console.log('[seeder] Baseline demo datasets successfully seeded into database.')
     }
-  })()
+  } catch (err) {
+    console.warn('[seeder] Startup auto-seed note:', err.message)
+  }
+
 
 
   app.post('/api/upload', requireRole(['operator']), upload.single('file'), handleMultiSourceUpload)
