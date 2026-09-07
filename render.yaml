@@ -12,3 +12,7 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: DB_PATH
+        value: /var/data/database.sqlite
+      - key: DB_FALLBACK_SQLITE
+        value: "true"

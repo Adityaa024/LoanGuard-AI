@@ -15,8 +15,13 @@ export async function getDb() {
   if (dbInstance) return dbInstance
 
   if (process.env.DATABASE_URL) {
-    dbInstance = await openPostgres()
-    return dbInstance
+    try {
+      dbInstance = await openPostgres()
+      return dbInstance
+    } catch (error) {
+      if (process.env.DB_FALLBACK_SQLITE === 'false') throw error
+      console.error(`[db] Supabase unavailable; falling back to SQLite: ${error.code || error.message}`)
+    }
   }
 
   // Ensure data directory exists
