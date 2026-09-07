@@ -51,18 +51,33 @@ export class Ledger {
       const { getDb } = await import('../db/index.js')
       const db = await getDb()
       const batchId = 'seed_data'
+      const firstLoanId = this.byId.keys().next().value
+      const existing = await db.get(
+        'SELECT COUNT(*) AS count, MAX(CASE WHEN id = ? THEN 1 ELSE 0 END) AS has_first FROM loans',
+        [firstLoanId]
+      )
+
+      if (existing.count >= this.byId.size && existing.has_first === 1) return
       
       await db.run(`INSERT OR IGNORE INTO upload_batches (id, filename, uploaded_by) VALUES (?, ?, ?)`, 
         [batchId, 'seed_data.csv', 'system'])
-        
-      for (const [id, l] of this.byId.entries()) {
-        await db.run(`
-          INSERT OR IGNORE INTO loans (id, upload_batch_id, loan_id, borrower_name, principal_balance)
-          VALUES (?, ?, ?, ?, ?)
-        `, [id, batchId, l.loanId, l.borrowerName || 'Unknown', l.balance])
+
+      await db.exec('BEGIN')
+      try {
+        for (const [id, l] of this.byId.entries()) {
+          await db.run(`
+            INSERT OR IGNORE INTO loans (id, upload_batch_id, loan_id, borrower_name, principal_balance)
+            VALUES (?, ?, ?, ?, ?)
+          `, [id, batchId, l.loanId, l.borrowerName || 'Unknown', l.balance])
+        }
+        await db.exec('COMMIT')
+      } catch (error) {
+        await db.exec('ROLLBACK')
+        throw error
       }
     } catch (e) {
       console.error('Failed to sync ledger to db:', e)
+      throw e
     }
   }
 
