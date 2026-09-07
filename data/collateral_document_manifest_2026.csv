@@ -1,0 +1,12 @@
+loan_id,document_type,document_status,uploaded_at,custodian_vault_id
+LN_INST_1001,Promissory_Note,verified,2026-08-30T10:15:00Z,VAULT_EAST_01
+LN_INST_1001,Deed_of_Trust,verified,2026-08-30T10:15:00Z,VAULT_EAST_01
+LN_INST_1001,Title_Insurance,verified,2026-08-30T10:15:00Z,VAULT_EAST_01
+LN_INST_1002,Promissory_Note,verified,2026-08-30T11:00:00Z,VAULT_EAST_01
+LN_INST_1002,Deed_of_Trust,verified,2026-08-30T11:00:00Z,VAULT_EAST_01
+LN_INST_1003,Promissory_Note,missing,2026-08-30T11:30:00Z,VAULT_WEST_02
+LN_INST_1012,Promissory_Note,verified,2026-08-30T12:00:00Z,VAULT_CENTRAL_03
+LN_INST_1012,Deed_of_Trust,verified,2026-08-30T12:00:00Z,VAULT_CENTRAL_03
+LN_INST_1013,Title_Insurance,missing,2026-08-30T12:15:00Z,VAULT_CENTRAL_03
+LN_INST_1014,Promissory_Note,verified,2026-08-30T12:45:00Z,VAULT_WEST_02
+LN_INST_1015,Appraisal_Report,verified,2026-08-30T13:00:00Z,VAULT_EAST_01

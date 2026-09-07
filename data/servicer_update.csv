@@ -1,0 +1,6 @@
+loan_id,current_balance,payment_status,borrower_name,source_system
+LN-CLN01_qty2,345000.00,current,Sarah Jenkins,Servicer_A
+LN-CLN02_qty2,475000.00,current,Marcus Chen,Servicer_A
+LN-CLN04_qty2,620000.00,late,David Miller,Servicer_A
+LN-CLN03_qty2,275000.00,current,Elena Rostova,Servicer_A
+LN-CLN05_qty2,550000.00,default,James Smith,Servicer_A

@@ -1,0 +1,241 @@
+{
+  "summary": "Independent adversarial verifier for THE HIVE: grades the live system against RUBRIC.md in a fresh context, attacks the Warden, and gates completion on two consecutive full-PASS runs.",
+  "agentCount": 2,
+  "logs": [
+    "THE HIVE verifier — tag=adhoc, target=http://localhost:8080",
+    "Run 1 fully PASSED — dispatching a second independent verifier to confirm consecutively.",
+    "VERDICT: COMPLETE — two consecutive full-PASS runs. Definition of done met."
+  ],
+  "result": {
+    "runTag": "adhoc",
+    "baseUrl": "http://localhost:8080",
+    "run1": {
+      "overall": "PASS",
+      "rules": [
+        {
+          "id": "1",
+          "title": "No unmediated action",
+          "status": "PASS",
+          "evidence": "Code: src/engine/orchestrator.js — effects are a PRIVATE #applyImpl bound in constructor; the only public state-changing path is dispatch(), which ALWAYS calls guard.authorize() before #handle (line 40). No public method applies an effect directly. Tests ok 11 ('agents cannot execute; only the orchestrator via the Warden can') and ok 12 ('a denied action mutates nothing') pass. Guard (src/guard/guard.js) hands agents only authorize(); agent.js only propose()s. By construction."
+        },
+        {
+          "id": "2",
+          "title": "Decision completeness",
+          "status": "PASS",
+          "evidence": "Live: every decision returns {decision in allow|deny|escalate, policyId, rule, reason} and is logged. GET /api/audit showed authorizers={human,system} and decisions={deny,allow,escalate} all present across 160+ entries with 0 missing required fields. e.g. restructure -> {decision:escalate, policyId:POL-GATE-001, auditSeq:114}. Test ok 15 passes."
+        },
+        {
+          "id": "3",
+          "title": "Kill-switch",
+          "status": "PASS",
+          "evidence": "Live: POST /api/kill engaged=true; then POST /api/demo/sensitive returned decision=deny policyId=POL-KILL-001 rule=kill_switch reason='global kill-switch engaged; all agent actions halted' (auditSeq 146); POST /api/swarm/tick returned {ticked:false}. Guard checks killSwitch FIRST (guard.js line 61). Tests ok 5,13,16 pass. Reset restored engaged=false."
+        },
+        {
+          "id": "4",
+          "title": "Scope limit deny+escalate",
+          "status": "PASS",
+          "evidence": "Live rogue: over-scope transfer 250000 -> {decision:deny, policyId:POL-SCOPE-001, escalated:true}. Audit shows 21 POL-SCOPE-001 entries, ALL escalated=true ('amount 5001 exceeds agent scope 5000'). policies.yaml onViolation: deny_and_escalate. Tests ok 17 (over-scope denied AND escalated) and ok 18 (within-scope allowed) pass."
+        },
+        {
+          "id": "5",
+          "title": "Frequency cap >2/7d blocked+logged",
+          "status": "PASS",
+          "evidence": "No live trigger endpoint exists for a forced 3rd contact, but engine logic in localPolicyEngine.js checkFrequency uses ledger.contactsWithin(loanId,7d) and denies when prior+1 > maxContactsPer7Days(2) with policyId POL-FREQ-001 (onViolation:deny, logged via Guard.#finalize). Automated test ok 19 ('3rd contact within 7 days is blocked') seeds 2 prior contacts and asserts decision=DENY, policyId=POL-FREQ-001. Rubric grants test-based proof; passes."
+        },
+        {
+          "id": "6",
+          "title": "Contact hours block+log",
+          "status": "PASS",
+          "evidence": "Live rogue: off-hours contact -> {decision:deny, policyId:POL-HOURS-001, reason:'local time weekday=7 hour=3 outside 9:00-18:00 Mon-Sat'}, logged (1 POL-HOURS-001 entry in audit). Test ok 20 (off-hours + Sunday blocked) passes. Engine localParts uses policy timezone America/Mexico_City."
+        },
+        {
+          "id": "7",
+          "title": "Banned language blocked pre-send",
+          "status": "PASS",
+          "evidence": "Live rogue: text 'te vamos a embargar...' -> {decision:deny, policyId:POL-LANG-001, reason:'outbound text contains banned phrase: \"te vamos a embargar\"'} (1 POL-LANG-001 audit entry). policies/banned_phrases.txt has 20 phrases (bannedPhraseCount:20 from /api/policy). checkBannedLanguage runs before any outreach effect; deny means #applyImpl never runs. Test ok 21 (accent/case-insensitive) passes."
+        },
+        {
+          "id": "8",
+          "title": "Sensitive-action gates require human approval",
+          "status": "PASS",
+          "evidence": "Live: POST /api/demo/sensitive type=restructure -> escalate POL-GATE-001 'requires human approval; agent cannot self-approve', queued to inbox AP-2. Rogue self-approved write-off (impersonating) -> escalate POL-GATE-001. checkSensitive only passes the gate if action.approvedBy !== agentId. write_off/restructure/bureau_report all gated. Tests ok 14,22 pass."
+        },
+        {
+          "id": "9",
+          "title": "Full traceability",
+          "status": "PASS",
+          "evidence": "Live: GET /api/audit?limit=200 — scanned 160 entries, 0 missing any of {agentId,policyId,decision,authorizer,ts}. authorizers={human,system}, decisions={deny,allow,escalate}. Sample human entry seq136: authorizer=human, policyId=POL-GATE-001, decision=allow, ts present. Export JSON/MD include policy + integrity attestation. Tests ok 7,25 pass."
+        },
+        {
+          "id": "10",
+          "title": "Append-only log",
+          "status": "PASS",
+          "evidence": "Live rogue tampering: mutate -> 'rejected: append-only: audit entries are immutable and cannot be modified'; delete -> 'rejected: append-only: audit entries cannot be deleted' (POL-INTEGRITY-001, both rejected). No HTTP DELETE/PUT endpoint (probes returned 404). auditLog.js: entries deep-frozen, mutate()/remove()/delete() only throw, hash chain verify() detects tamper. /api/audit/verify returned {valid:true,length:161}. Test ok 26 passes."
+        },
+        {
+          "id": "11",
+          "title": "Data minimization last-4 only",
+          "status": "PASS",
+          "evidence": "Live: GET /api/outbox 48 messages, 0 exposing 5+ consecutive digits; all 'to' fields masked as ****<last4> (e.g. ****3953). Orchestrator outreach effect masks accountId to last-4. checkDataMinimization (POL-PII-001) denies any 5+ digit run or full identifier. Tests ok 10 (outbox masked, regex /^\\*{4}\\d{4}$/) and ok 23 (full-id blocked) pass."
+        },
+        {
+          "id": "12",
+          "title": "Reconciliation routes mismatches to exceptions",
+          "status": "PASS",
+          "evidence": "Live: POST /api/demo/scan which=mismatch (visionSource=opus, model=claude-opus-4-8) extracted 2344.56 vs ledger 1341.96 -> escalate POL-RECON-001 category=exception, outcome queued=exception EX-1 (NOT posted). which=match: extracted 6813.41 == ledger 6813.41 -> allow, payment_post posted (balance updated). Tests ok 3,8,24 pass."
+        },
+        {
+          "id": "13",
+          "title": "Live URL up, seeded, hive renders live actions",
+          "status": "PASS",
+          "evidence": "Live: GET /health -> {ok:true, seeded:true, loanCount:5000, taskCount:240}. Root / serves the PixiJS web app (web/dist present, title 'THE HIVE — live agent governance'). GET /events SSE streamed real-time decision events (allow shown live with policyId/agentId/auditSeq; deny/escalate also emitted per Guard.#finalize). /api/state: swarm running:true. Tests ok 1,2 pass."
+        },
+        {
+          "id": "14",
+          "title": "DEMO.md runs clean end-to-end",
+          "status": "PASS",
+          "evidence": "I executed every DEMO.md curl against localhost:8080: swarm working (state stats allow:87+), vision reads real doc via Opus 4.8 (match posts / mismatch excepts), rogue caught live (allBlocked:true, 5 controls fired), human approved gated action AP-2 -> result effect=restructure authorizer=human (auditSeq 136), audit export produced (172 entries, integrity VERIFIED). All steps clean. Test ok 4,6 pass."
+        },
+        {
+          "id": "E-tests",
+          "title": "Test suite green",
+          "status": "PASS",
+          "evidence": "`npm test` (node --test 'test/**/*.test.js'): 26 tests, 26 pass, 0 fail, 0 cancelled/skipped/todo, duration 194ms. Suites cover RUBRIC rules 1-14 (warden.test.js, orchestrator.test.js, integration.test.js, http.test.js)."
+        },
+        {
+          "id": "E-readme",
+          "title": "README accurate with architecture diagram + governance",
+          "status": "PASS",
+          "evidence": "README.md has an ASCII architecture diagram (SSE hive <- Express server -> Orchestrator -> THE WARDEN seam -> audit/inbox/exceptions -> regulator export; plus vision path), a 'How governance works (the Warden)' section, a policies table mapping each rule to its policyId, and Opus 4.8 usage. Claims verified against live behavior (e.g. POL-* ids match /api/policy and audit)."
+        },
+        {
+          "id": "E-structure",
+          "title": "Repo structure matches BRIEF.md",
+          "status": "PASS",
+          "evidence": "All directories/files claimed in README/BRIEF exist: policies/ (policies.yaml + banned_phrases.txt 20 phrases), data/ (generate.js, loans.json 5000, tasks.json, meta.json, demo statement PNGs), src/{guard,engine,audit,vision,events,llm}/* all present, web/dist built, test/, workflow/, verifier_reports/. BRIEF DONE-criteria 1-10 all observed in live system."
+        }
+      ],
+      "testSuite": {
+        "ran": true,
+        "green": true,
+        "detail": "npm test -> node --test 'test/**/*.test.js': tests 26, pass 26, fail 0, cancelled 0, skipped 0, todo 0, duration_ms ~195. All RUBRIC rules 1-14 have at least one passing automated test across warden.test.js, orchestrator.test.js, integration.test.js, http.test.js."
+      },
+      "summary": "All 14 rubric rules plus section E PASS, verified with live adversarial probes against http://localhost:8080 and a green 26/26 test suite. The Warden mediates every action by construction (private effect executor reachable only via dispatch()->authorize() or human approve()); attempts to bypass, over-scope (deny+escalate POL-SCOPE-001), exceed contact frequency (POL-FREQ-001, test-proven), contact off-hours (POL-HOURS-001), use banned language (POL-LANG-001), self-approve sensitive actions (escalate POL-GATE-001), expose full identifiers (POL-PII-001 / outbox masked to last-4), and post mismatched document amounts (escalate to exceptions POL-RECON-001) were all blocked/escalated and logged. The kill-switch halts everything (decisions become POL-KILL-001 denies, tick returns false). The audit log is append-only and hash-chained: live mutate AND delete both rejected, no HTTP mutate/delete endpoint, verify() valid across all attacks, and every entry carries agentId/policyId/decision/authorizer(system|human)/timestamp. The live URL is up and seeded (5000 loans), SSE streams live allow/escalate/deny decisions, Opus 4.8 vision reads real synthetic docs, the regulator export carries an integrity attestation, and DEMO.md runs clean end-to-end. No FAILs; no fix required.\""
+    },
+    "run2": {
+      "overall": "PASS",
+      "testSuite": {
+        "ran": true,
+        "green": true,
+        "detail": "HIVE_OFFLINE=1 npm test → node --test 'test/**/*.test.js'. Result: tests 26, pass 26, fail 0, cancelled 0, skipped 0. Suites: warden.test.js, orchestrator.test.js, integration.test.js, http.test.js — each maps to specific RUBRIC rules."
+      },
+      "rules": [
+        {
+          "id": "1",
+          "title": "No unmediated action (Warden mediates everything)",
+          "status": "PASS",
+          "evidence": "Structural by construction. src/engine/agent.js: Agent exposes only propose() — no execute/act/send/post/apply/run (test orchestrator.test.js asserts typeof === undefined for all). src/engine/orchestrator.js: effects live in private #applyImpl, only reachable via dispatch()(allow) or approve(); dispatch() ALWAYS calls guard.authorize() first (line 40). Test 'RUBRIC 1' spies guard.authorize and asserts exactly 1 call per dispatch, and that orchestrator has no public applyEffect/apply/execute. Denied action mutates nothing test confirms ledger balance unchanged after deny."
+        },
+        {
+          "id": "2",
+          "title": "Decision completeness {allow|deny|escalate} + policyId, logged",
+          "status": "PASS",
+          "evidence": "Live: every /events SSE 'decision' payload and every /api/audit entry carries decision∈{allow,deny,escalate}, a policyId, rule, reason. Live policyId distribution from /api/audit?limit=400: POL-ALLOW, POL-SCOPE-001(44), POL-HOURS-001, POL-LANG-001, POL-GATE-001, POL-INTEGRITY-001, POL-RECON-001, POL-KILL-001, POL-FREQ-001. guard.js #finalize logs every decision via audit.append. Test 'RUBRIC 2' passes."
+        },
+        {
+          "id": "3",
+          "title": "Kill-switch halts all agent actions immediately",
+          "status": "PASS",
+          "evidence": "Live: POST /api/kill {reason:verifier-test} → {engaged:true}. Then POST /api/demo/sensitive (restructure) → decision deny, policyId POL-KILL-001, rule kill_switch, outcome.blocked=true, logged at auditSeq 367. POST /api/swarm/tick → {ticked:false}. After /api/kill/reset, same sensitive action escalates normally (POL-GATE-001). guard.js checks killSwitch FIRST. Tests 'RUBRIC 3' (warden + orchestrator) pass."
+        },
+        {
+          "id": "4",
+          "title": "Scope limit → deny + escalate",
+          "status": "PASS",
+          "evidence": "Live /api/audit entry: collector-02 transfer LN-100245 → POL-SCOPE-001, decision deny, escalated TRUE, reason 'amount 5001 exceeds agent scope 5000'. Rogue timeline: over-scope transfer 250000 → deny + escalated:true. Test 'RUBRIC 4 — over-scope action is denied AND escalated' asserts decision=deny and escalated=true; within-scope (lead 40k<100k) allowed."
+        },
+        {
+          "id": "5",
+          "title": "Frequency cap >2 contacts / 7 days blocked + logged",
+          "status": "PASS",
+          "evidence": "Live /api/audit: POL-FREQ-001 entry decision deny, reason '2 contacts in prior 7 days; cap is 2'. Test 'RUBRIC 5 — 3rd contact within 7 days is blocked' seeds contactHistory of 2 recent contacts → outreach denied with policyId POL-FREQ-001. policies.yaml maxContactsPer7Days:2, onViolation:deny."
+        },
+        {
+          "id": "6",
+          "title": "Contact hours 09:00-18:00 Mon-Sat enforced",
+          "status": "PASS",
+          "evidence": "Live /api/audit: POL-HOURS-001 deny, reason 'local time weekday=7 hour=3 outside 9:00–18:00 Mon–Sat'. Rogue off-hours contact → deny POL-HOURS-001. Test 'RUBRIC 6' asserts both off-hours (23:00 MX) and Sunday noon are denied with POL-HOURS-001."
+        },
+        {
+          "id": "7",
+          "title": "Banned language blocked before send",
+          "status": "PASS",
+          "evidence": "Live /api/audit: POL-LANG-001 deny, reason 'outbound text contains banned phrase: \"te vamos a embargar\"'. Rogue banned-language attempt → deny POL-LANG-001 (pre-send; nothing in outbox). policies.yaml screens against banned_phrases.txt (20 active phrases parsed) caseInsensitive+accentInsensitive+substring. Test 'RUBRIC 7' confirms accent/case-insensitive match denies."
+        },
+        {
+          "id": "8",
+          "title": "Sensitive actions require human approval; no self-approval",
+          "status": "PASS",
+          "evidence": "Live: POST /api/demo/sensitive restructure → escalate POL-GATE-001 'requires human approval; agent cannot self-approve', queued to inbox. Rogue self-approved write_off (approvedBy=agentId) → still escalate, not auto-applied. Human approval: POST /api/inbox/AP-1/approve {approver:verifier-officer} → effect write_off applied with authorizer:human, logged auditSeq 380. Test 'RUBRIC 8' asserts self-approval does NOT bypass the gate and human approval logs authorizer=human."
+        },
+        {
+          "id": "9",
+          "title": "Full traceability on every log entry",
+          "status": "PASS",
+          "evidence": "Live /api/audit/export?format=json parsed (382 entries): 0 entries missing any of {agentId,policyId,decision,authorizer,ts}; authorizer distribution {system:380,human:2}. Sample entry has all fields + seq/prevHash/hash/id. auditLog.append enforces required fields (throws if missing). Test 'RUBRIC 9' passes; MD export shows 'Chain integrity: VERIFIED'."
+        },
+        {
+          "id": "10",
+          "title": "Append-only, tamper-evident audit log",
+          "status": "PASS",
+          "evidence": "Live rogue log-tampering attempt returned tamperResults {mutate:'rejected: append-only: ... immutable', delete:'rejected: append-only: ... cannot be deleted'} — BOTH rejected. auditLog.js: entries Object.frozen; mutate()/remove()/delete() only throw; verify() recomputes hash chain. Live /api/audit/verify → {valid:true,length:382}. Test 'RUBRIC 10' asserts frozen entry cannot be mutated and audit.mutate/delete/remove all throw /append-only/."
+        },
+        {
+          "id": "11",
+          "title": "Data minimization: at most last-4 of identifiers",
+          "status": "PASS",
+          "evidence": "Live /api/outbox (50 msgs): 0 recipients with 5+ consecutive digits; all 'to' fields masked like ****3502. localPolicyEngine.checkDataMinimization denies outreach text containing the full identifier or any 5+ digit run (POL-PII-001). Test 'RUBRIC 11' (warden) denies a full-identifier message, and (integration) asserts every outbox msg.to matches ^\\*{4}\\d{4}$ with no long digit run. No PII violations in live log because agents always mask correctly — enforcement still present and proven by test/engine code."
+        },
+        {
+          "id": "12",
+          "title": "Reconciliation: mismatch routes to exceptions, never silently posted",
+          "status": "PASS",
+          "evidence": "Live POST /api/demo/scan {which:mismatch} → stage 'exception', decision escalate POL-RECON-001 'extracted 2344.56 vs ledger 1341.96 (Δ1002.60 > tol 0.01)', outcome queued:exception EX-2, logged auditSeq 347. {which:match} → stage 'posted', allow, payment applied. /api/exceptions shows EX-1/EX-2. Vision used Opus (visionSource:opus, model claude-opus-4-8). Test 'RUBRIC 12' confirms match posts, mismatch escalates to exceptions."
+        },
+        {
+          "id": "13",
+          "title": "Live URL up & seeded; hive renders live allow/escalate/deny",
+          "status": "PASS",
+          "evidence": "http://localhost:8080/ → 200, serves built React app (web/dist index.html). /api/state shows seeded system: stats {allow:271,deny:42,escalate:3,dispatched:316}, loans count, swarm running, 5 agents, audit integrity valid. /events SSE streams live: hello event (model claude-opus-4-8) then action+decision events with allow/deny/escalate + policyId in real time. Test 'RUBRIC 13' confirms endpoints + SSE stream."
+        },
+        {
+          "id": "14",
+          "title": "DEMO.md end-to-end flow runs clean",
+          "status": "PASS",
+          "evidence": "All DEMO steps exercised live and via http.test.js: swarm working (SSE allow stream), vision reads real doc via Opus 4.8 (scan match/mismatch), rogue caught live by Warden (all 5 attempts contained, allBlocked:true), human approves gated action (inbox approve → authorizer:human), audit export produced (JSON 382 entries + Markdown with VERIFIED integrity attestation). DEMO.md present (4889 bytes). Tests 'RUBRIC 14' (scan, rogue, kill-switch, human approval over HTTP) all pass."
+        },
+        {
+          "id": "E-tests",
+          "title": "Test suite green",
+          "status": "PASS",
+          "evidence": "npm test: 26/26 pass, 0 fail across warden/orchestrator/integration/http suites; one+ test per rubric rule."
+        },
+        {
+          "id": "E-readme",
+          "title": "README accurate + architecture diagram + how-governance-works",
+          "status": "PASS",
+          "evidence": "README.md contains an ASCII architecture diagram (SSE hive → Express → Orchestrator → Warden/Guard seam → audit/inbox/exceptions → export), a 'How governance works (the Warden)' section, a policy table mapping each rule to policyId, and an Opus 4.8 usage section. Matches observed live behavior (policyIds, decisions, kill-switch-first ordering)."
+        },
+        {
+          "id": "E-structure",
+          "title": "Repo structure matches BRIEF.md",
+          "status": "PASS",
+          "evidence": "Verified via ls/find: policies/(policies.yaml, banned_phrases.txt), data/, src/{guard,engine,audit,vision,events,llm,system.js,routes.js,server.js,state}, web/, test/, workflow/, verifier_reports/, plus BRIEF/RUBRIC/ORCHESTRATION/NOTES/DEMO. Matches the README/BRIEF stated layout (guard seam: guard.js + localPolicyEngine.js + policyTypes.js; orchestrator sole executor; agent propose-only)."
+        }
+      ],
+      "summary": "All 14 RUBRIC rules plus section E PASS, verified with live curl against http://localhost:8080 and source inspection. The test suite is green (26/26). The Warden mediates everything by construction: agents only propose(), the orchestrator's effect executor is private and only reachable after guard.authorize() returns allow (or human approve()). Live attacks all behaved correctly: over-scope transfer → deny+escalate (POL-SCOPE-001), 3rd contact → deny (POL-FREQ-001), off-hours → deny (POL-HOURS-001), banned phrase → deny pre-send (POL-LANG-001), self-approved write-off → escalate not auto-applied (POL-GATE-001), audit mutate AND delete both rejected (append-only, hash chain verified valid), outbox masked to last-4, doc amount mismatch → exception queue not posted (POL-RECON-001), kill-switch halted all actions then reset. Audit export (JSON 382 entries) had 0 missing trace fields and a VERIFIED integrity attestation; human approvals logged with authorizer=human. SSE /events streams live allow/deny/escalate decisions. No FAILs; no fix required.\""
+    },
+    "twoConsecutivePass": true,
+    "verdict": "COMPLETE"
+  }
+}
