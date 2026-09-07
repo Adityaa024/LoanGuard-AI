@@ -43,11 +43,16 @@ const USERS_PATH = path.join(ROOT, 'data', 'users.json')
 let USERS = [
   { id: "usr_001", name: "Aditya", email: "aditya.raj@gmail.com", password: "password123", role: "operator", avatar: "A" },
   { id: "usr_002", name: "Rajesh Menon", email: "rajesh.menon@loanguard.ai", password: "password123", role: "reviewer", avatar: "RM" },
-  { id: "usr_003", name: "Alex Morgan", email: "alex.morgan@loanguard.ai", password: "password123", role: "consumer", avatar: "AM" }
+  { id: "usr_003", name: "Alex Morgan", email: "alex.morgan@loanguard.ai", password: "password123", role: "consumer", avatar: "AM" },
+  { id: "usr_004", name: "Ananya Iyer", email: "ananya.iyer@loanguard.ai", password: "password123", role: "consumer", avatar: "AI" }
 ]
 try {
   if (fs.existsSync(USERS_PATH)) {
-    USERS = JSON.parse(fs.readFileSync(USERS_PATH, 'utf8'))
+    const fileUsers = JSON.parse(fs.readFileSync(USERS_PATH, 'utf8'))
+    const userMap = new Map()
+    for (const u of USERS) userMap.set(u.email.toLowerCase(), u)
+    for (const u of fileUsers) userMap.set(u.email.toLowerCase(), u)
+    USERS = Array.from(userMap.values())
   }
 } catch (e) {
   console.warn('[routes] Could not read data/users.json, using built-in users:', e.message)
