@@ -335,7 +335,19 @@ export async function registerRoutes(app, { ROOT }) {
 
         } else {
           // ---- 3. Primary Loan Origination Tape Ingestion & Full Engine Validation ----
-          const existingRows = await db.all(`SELECT * FROM loans`)
+          const incomingLoanIds = [...new Set(records
+            .map(row => (row.loan_id || row.LoanID || '').trim())
+            .filter(Boolean))]
+          const existingRows = []
+          for (let start = 0; start < incomingLoanIds.length; start += 500) {
+            const chunk = incomingLoanIds.slice(start, start + 500)
+            const placeholders = chunk.map(() => '?').join(', ')
+            const rows = await db.all(
+              `SELECT loan_id, source_system, current_balance FROM loans WHERE loan_id IN (${placeholders})`,
+              chunk
+            )
+            existingRows.push(...rows)
+          }
           const existingLoanMap = new Map(existingRows.map(r => [r.loan_id, r]))
           const existingLoanIds = new Set(existingRows.map(r => r.loan_id))
           const batchSeenIds = new Set()
