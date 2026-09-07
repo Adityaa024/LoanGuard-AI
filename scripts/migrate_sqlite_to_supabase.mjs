@@ -32,6 +32,7 @@ const schemaDb = await openPostgres()
 await schemaDb.close()
 const pool = new Pool({
   connectionString: databaseUrl,
+  family: 4,
   ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false }
 })
 

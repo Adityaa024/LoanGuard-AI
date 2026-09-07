@@ -250,6 +250,7 @@ export async function openPostgres() {
     max: Number(process.env.DB_POOL_MAX || 5),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
+    family: 4,
     ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false }
   })
   const db = new PostgresDatabase(pool)
