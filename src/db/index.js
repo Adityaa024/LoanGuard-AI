@@ -3,6 +3,7 @@ import { open } from 'sqlite'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import { openPostgres } from './postgres.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_DB_PATH = path.join(__dirname, '..', '..', 'data', 'database.sqlite')
@@ -12,6 +13,11 @@ let dbInstance = null
 
 export async function getDb() {
   if (dbInstance) return dbInstance
+
+  if (process.env.DATABASE_URL) {
+    dbInstance = await openPostgres()
+    return dbInstance
+  }
 
   // Ensure data directory exists
   const dataDir = path.dirname(DB_PATH)

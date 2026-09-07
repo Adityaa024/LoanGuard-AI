@@ -9,6 +9,7 @@
   },
   "scripts": {
     "seed": "node data/generate.js",
+    "migrate:supabase": "node scripts/migrate_sqlite_to_supabase.mjs",
     "dev": "node src/server.js",
     "start": "node --max-old-space-size=256 src/server.js",
     "build:web": "npm --prefix web install --include=dev && npm --prefix web run build",
@@ -23,6 +24,7 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
+    "pg": "^8.23.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "yaml": "^2.6.1",

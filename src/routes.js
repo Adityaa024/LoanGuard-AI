@@ -714,7 +714,7 @@ export async function registerRoutes(app, { ROOT }) {
         query += ` WHERE e.status = ? `
         params.push(status)
       }
-      query += ` ORDER BY e.rowid DESC LIMIT ? `
+      query += ` ORDER BY e.id DESC LIMIT ? `
       params.push(limit)
 
       const exc = await db.all(query, params)
