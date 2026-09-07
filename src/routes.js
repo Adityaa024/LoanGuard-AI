@@ -78,7 +78,11 @@ function requireRole(allowedRoles) {
   }
 }
 
-const upload = multer({ dest: path.join(__dirname, '..', 'data', '.uploads'), limits: { fileSize: 5 * 1024 * 1024 } })
+const uploadDir = path.join(__dirname, '..', 'data', '.uploads')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
+const upload = multer({ dest: uploadDir, limits: { fileSize: 5 * 1024 * 1024 } })
 
 export async function registerRoutes(app, { ROOT }) {
   // ---- Health Check ----
