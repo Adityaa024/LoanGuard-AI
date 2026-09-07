@@ -26,9 +26,9 @@ export async function getDb() {
   await dbInstance.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
-    PRAGMA cache_size = -4000;
-    PRAGMA temp_store = MEMORY;
-    PRAGMA mmap_size = 16777216;
+    PRAGMA cache_size = -2000;
+    PRAGMA temp_store = FILE;
+    PRAGMA mmap_size = 0;
 
     CREATE TABLE IF NOT EXISTS upload_batches (
       id TEXT PRIMARY KEY,
@@ -218,6 +218,7 @@ export async function getDb() {
   // Performance Indexes for sub-10ms queries with 75k+ loans
   await dbInstance.exec(`
     CREATE INDEX IF NOT EXISTS idx_exceptions_status ON exceptions(status);
+    CREATE INDEX IF NOT EXISTS idx_exceptions_status_sev ON exceptions(status, severity);
     CREATE INDEX IF NOT EXISTS idx_exceptions_loan_id ON exceptions(loan_id);
     CREATE INDEX IF NOT EXISTS idx_loans_loan_id ON loans(loan_id);
     CREATE INDEX IF NOT EXISTS idx_loans_validation_status ON loans(validation_status);

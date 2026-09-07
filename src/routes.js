@@ -554,55 +554,81 @@ export async function registerRoutes(app, { ROOT }) {
     return row.count
   }
 
-  // ---- Summary API ----
+  // Fast in-memory cached summary to prevent CPU/RAM spikes on Render
+  let cachedSummary = null
+  let cachedSummaryTime = 0
+
   const handleSummary = async (req, res) => {
     try {
+      const now = Date.now()
+      if (cachedSummary && (now - cachedSummaryTime < 2500) && !req.query.fresh) {
+        return res.json({ success: true, data: cachedSummary })
+      }
+
       const db = await getDb()
-      const totalLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status != 'pending'`)).count
-      const validLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'valid'`)).count
-      const exceptionLoans = (await db.get(`SELECT COUNT(*) as count FROM loans WHERE validation_status = 'has_exceptions'`)).count
-      const verifiedLoans = await getCanonicalVerifiedCount(db)
-      const totalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions`)).count
-      const openExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open'`)).count
-      const resolvedExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'resolved'`)).count
-      const uploadsCount = (await db.get(`SELECT COUNT(*) as count FROM upload_batches`)).count
       
-      // Affected records = exactly the unique loans with open exceptions
-      const affectedRecords = (await db.get(`SELECT COUNT(DISTINCT loan_id) as count FROM exceptions WHERE status = 'open'`)).count || exceptionLoans
-      
-      // To ensure perfect mathematical reconciliation (total = clean + affected),
-      // we derive cleanRecords directly from totalLoans - affectedRecords.
+      const [loanStats, excStats, uploadsRow] = await Promise.all([
+        db.get(`
+          SELECT 
+            COUNT(CASE WHEN validation_status != 'pending' THEN 1 END) as totalLoans,
+            COUNT(CASE WHEN validation_status = 'valid' THEN 1 END) as validLoans,
+            COUNT(CASE WHEN validation_status = 'has_exceptions' THEN 1 END) as exceptionLoans,
+            COUNT(CASE WHEN validation_status = 'verified' AND is_verified = 1 THEN 1 END) as verifiedLoans
+          FROM loans
+        `),
+        db.get(`
+          SELECT 
+            COUNT(*) as totalExceptions,
+            COUNT(CASE WHEN status = 'open' THEN 1 END) as openExceptions,
+            COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolvedExceptions,
+            COUNT(CASE WHEN status = 'open' AND severity = 'critical' THEN 1 END) as criticalExceptions,
+            COUNT(CASE WHEN status = 'open' AND severity = 'high' THEN 1 END) as highExceptions,
+            COUNT(CASE WHEN status = 'open' AND severity = 'medium' THEN 1 END) as mediumExceptions,
+            COUNT(CASE WHEN status = 'open' AND severity = 'low' THEN 1 END) as lowExceptions
+          FROM exceptions
+        `),
+        db.get(`SELECT COUNT(*) as count FROM upload_batches`)
+      ])
+
+      const totalLoans = loanStats?.totalLoans || 0
+      const validLoans = loanStats?.validLoans || 0
+      const exceptionLoans = loanStats?.exceptionLoans || 0
+      const verifiedLoans = loanStats?.verifiedLoans || 0
+
+      const totalExceptions = excStats?.totalExceptions || 0
+      const openExceptions = excStats?.openExceptions || 0
+      const resolvedExceptions = excStats?.resolvedExceptions || 0
+      const criticalExceptions = excStats?.criticalExceptions || 0
+      const highExceptions = excStats?.highExceptions || 0
+      const mediumExceptions = excStats?.mediumExceptions || 0
+      const lowExceptions = excStats?.lowExceptions || 0
+
+      const uploadsCount = uploadsRow?.count || 0
+      const affectedRecords = exceptionLoans
       const cleanRecords = totalLoans - affectedRecords
-      
-      // Real severity breakdown from DB (open exceptions findings)
-      const criticalExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'critical'`)).count
-      const highExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'high'`)).count
-      const mediumExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'medium'`)).count
-      const lowExceptions = (await db.get(`SELECT COUNT(*) as count FROM exceptions WHERE status = 'open' AND severity = 'low'`)).count
-      
       const data_quality_score = totalLoans > 0 ? Math.round((cleanRecords / totalLoans) * 100) : 100
-      
-      res.json({ 
-        success: true, 
-        data: { 
-          total_loans: totalLoans, 
-          valid_loans: validLoans, 
-          exception_loans: exceptionLoans, 
-          verified_loans: verifiedLoans, 
-          clean_records: cleanRecords,
-          affected_records: affectedRecords,
-          total_exceptions: totalExceptions, 
-          open_exceptions: openExceptions, 
-          resolved_exceptions: resolvedExceptions, 
-          uploads_count: uploadsCount, 
-          data_quality_score, 
-          critical_exceptions: criticalExceptions, 
-          high_exceptions: highExceptions, 
-          medium_exceptions: mediumExceptions, 
-          low_exceptions: lowExceptions,
-          reconciled: (cleanRecords + affectedRecords === totalLoans)
-        } 
-      })
+
+      cachedSummary = {
+        total_loans: totalLoans,
+        valid_loans: validLoans,
+        exception_loans: exceptionLoans,
+        verified_loans: verifiedLoans,
+        clean_records: cleanRecords,
+        affected_records: affectedRecords,
+        total_exceptions: totalExceptions,
+        open_exceptions: openExceptions,
+        resolved_exceptions: resolvedExceptions,
+        uploads_count: uploadsCount,
+        data_quality_score,
+        critical_exceptions: criticalExceptions,
+        high_exceptions: highExceptions,
+        medium_exceptions: mediumExceptions,
+        low_exceptions: lowExceptions,
+        reconciled: (cleanRecords + affectedRecords === totalLoans)
+      }
+      cachedSummaryTime = now
+
+      res.json({ success: true, data: cachedSummary })
     } catch (e) {
       res.status(500).json({ success: false, error: e.message })
     }
