@@ -43,7 +43,12 @@ export class Ledger {
     this.exceptions = [] // reconciliation mismatches routed here (RUBRIC 12)
     
     // Expose startup completion so the HTTP server can wait for the seed.
-    this.ready = loans.length > 0 ? this._syncToDb() : Promise.resolve()
+    this.ready = loans.length > 0
+      ? this._syncToDb().catch((error) => {
+        console.error('Failed to sync ledger to db:', error)
+        return false
+      })
+      : Promise.resolve(true)
   }
 
   async _syncToDb() {
@@ -76,7 +81,6 @@ export class Ledger {
         throw error
       }
     } catch (e) {
-      console.error('Failed to sync ledger to db:', e)
       throw e
     }
   }

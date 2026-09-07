@@ -254,6 +254,11 @@ export async function openPostgres() {
     ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false }
   })
   const db = new PostgresDatabase(pool)
-  await db.exec(schema)
-  return db
+  try {
+    await db.exec(schema)
+    return db
+  } catch (error) {
+    await pool.end().catch(() => {})
+    throw error
+  }
 }

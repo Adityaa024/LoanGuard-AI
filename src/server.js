@@ -49,7 +49,8 @@ app.get('/api/meta', (_req, res) => {
 // ---- Engine routes ----
 import { registerRoutes } from './routes.js'
 try {
-  await registerRoutes(app, { ROOT, meta })
+  // Bind the Render port even when an external database is temporarily unreachable.
+  await registerRoutes(app, { ROOT, meta, waitForDatabase: false })
   console.log('[server] API routes mounted successfully')
 } catch (e) {
   console.error('[server] CRITICAL: Failed to mount routes.js:', e)

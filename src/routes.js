@@ -80,7 +80,7 @@ function requireRole(allowedRoles) {
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } })
 
-export async function registerRoutes(app, { ROOT }) {
+export async function registerRoutes(app, { ROOT, waitForDatabase = true }) {
   // ---- Health Check ----
   app.get('/api/health', (req, res) => {
     res.json({ success: true, status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() })
@@ -99,7 +99,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
   const sys = buildSystem()
   const { orchestrator, guard, audit, events, ledger, backend } = sys
-  await ledger.ready
+  if (waitForDatabase) await ledger.ready
   const engine = backend
 
   // ---- Live event stream (SSE) ----
