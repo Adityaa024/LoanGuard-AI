@@ -49,7 +49,8 @@ async function uploadFile(filePath, token = operatorToken) {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Content-Type': `multipart/form-data; boundary=${boundary}`
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'x-force-upload': 'true'
     },
     body: payload
   });

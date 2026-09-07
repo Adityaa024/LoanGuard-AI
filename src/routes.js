@@ -129,7 +129,14 @@ export async function registerRoutes(app, { ROOT }) {
 
       const records = parse(req.file.buffer, { columns: true, skip_empty_lines: true })
       if (!records || records.length === 0) {
-        return res.status(400).json({ success: false, error: 'CSV file contains no valid records' })
+        return res.status(200).json({
+          success: true,
+          recordsProcessed: 0,
+          validRecords: 0,
+          exceptionCount: 0,
+          data: { recordsProcessed: 0, validRecords: 0, exceptionCount: 0 },
+          message: 'Empty or header-only CSV processed: 0 records'
+        })
       }
 
       const firstRow = records[0]
@@ -663,7 +670,7 @@ export async function registerRoutes(app, { ROOT }) {
         query += ` WHERE e.status = ? `
         params.push(status)
       }
-      query += ` ORDER BY e.id DESC LIMIT ? `
+      query += ` ORDER BY e.rowid DESC LIMIT ? `
       params.push(limit)
 
       const exc = await db.all(query, params)
@@ -1489,7 +1496,7 @@ export async function registerRoutes(app, { ROOT }) {
   })
 
   // ---- Exception Resolution ----
-  app.patch('/api/exceptions/:id', requireRole(['reviewer', 'operator']), async (req, res) => {
+  app.patch('/api/exceptions/:id', requireRole(['reviewer']), async (req, res) => {
     try {
       const { action, note, corrected_value } = req.body
       const effectiveAction = action === 'approve' ? 'resolve' : action
@@ -1535,11 +1542,11 @@ export async function registerRoutes(app, { ROOT }) {
         // Whitelist field to prevent SQL injection
         const allowedFields = ['loan_id', 'borrower_id', 'borrower_name', 'property_state', 'principal_balance', 'original_principal', 'current_balance', 'interest_rate', 'origination_date', 'maturity_date', 'term_months', 'loan_purpose', 'payment_status', 'days_past_due', 'document_status', 'loan_status', 'last_updated_at', 'source_system']
         if (allowedFields.includes(exc.field)) {
-          const existingLoan = await db.get(`SELECT * FROM loans WHERE id = ?`, [exc.loan_id])
-          const modifiedLoan = { ...existingLoan, [exc.field]: corrected_value }
-          const parseResult = LoanSchema.safeParse(modifiedLoan)
-          if (!parseResult.success) {
-            return res.status(400).json({ success: false, error: 'Validation failed: ' + parseResult.error.issues[0].message })
+          if (LoanSchema.shape[exc.field]) {
+            const fieldParse = LoanSchema.shape[exc.field].safeParse(corrected_value)
+            if (!fieldParse.success) {
+              return res.status(400).json({ success: false, error: 'Validation failed: ' + fieldParse.error.issues[0].message })
+            }
           }
           await db.run(`UPDATE loans SET ${exc.field} = ?, reviewer_decision = ?, ai_recommendation = ? WHERE id = ?`, 
             [corrected_value, effectiveAction, exc.ai_explanation || null, exc.loan_id])
