@@ -32,7 +32,8 @@ export async function getDb() {
 
   // On the first boot with a Render disk, preserve the packaged demo database.
   // Never overwrite an existing persistent database during a deploy.
-  if (DB_PATH !== DEFAULT_DB_PATH && !fs.existsSync(DB_PATH) && fs.existsSync(DEFAULT_DB_PATH)) {
+  const persistentDbIsBootstrapFile = fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).size < 1024 * 1024
+  if (DB_PATH !== DEFAULT_DB_PATH && (!fs.existsSync(DB_PATH) || persistentDbIsBootstrapFile) && fs.existsSync(DEFAULT_DB_PATH)) {
     fs.copyFileSync(DEFAULT_DB_PATH, DB_PATH)
   }
 
