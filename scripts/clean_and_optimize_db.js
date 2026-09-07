@@ -20,7 +20,10 @@ async function cleanAndOptimize() {
       SELECT id FROM upload_batches
     );
     DELETE FROM exceptions WHERE loan_id NOT IN (
-      SELECT id FROM loans
+      SELECT loan_id FROM loans
+    );
+    DELETE FROM audit_logs WHERE id NOT IN (
+      SELECT id FROM audit_logs ORDER BY seq DESC LIMIT 500
     );
   `);
 

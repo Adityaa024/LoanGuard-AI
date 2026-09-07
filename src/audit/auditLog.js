@@ -16,41 +16,6 @@ const GENESIS = '0'.repeat(64)
 export class AuditLog {
   #entries = []
 
-  async init() {
-    if (this.#entries.length > 0) return
-    try {
-      const db = await getDb()
-      const rows = await db.all(`SELECT * FROM audit_logs ORDER BY seq ASC`)
-      if (rows && rows.length > 0) {
-        this.#entries = rows.map(r => {
-          const entry = {
-            id: r.id,
-            seq: r.seq,
-            agentId: r.agentId,
-            actionType: r.actionType,
-            loanId: r.loanId,
-            policyId: r.policyId,
-            rule: r.rule,
-            decision: r.decision,
-            escalated: !!r.escalated,
-            amount: r.amount,
-            reason: r.reason,
-            authorizer: r.authorizer,
-            ts: r.ts,
-            prevHash: r.prevHash,
-            hash: r.hash
-          }
-          if (r.details && typeof r.details === 'string') {
-            try { entry.details = JSON.parse(r.details) } catch (_) {}
-          }
-          return Object.freeze(entry)
-        })
-      }
-    } catch (err) {
-      console.warn('[AuditLog] init from DB failed:', err.message)
-    }
-  }
-
   append(fields) {
     const required = ['agentId', 'policyId', 'decision', 'authorizer', 'ts']
     for (const k of required) {
@@ -149,9 +114,6 @@ export class AuditLog {
   delete() { throw new Error('append-only: audit entries cannot be deleted') }
 
   async verify() {
-    if (this.#entries.length === 0) {
-      await this.init()
-    }
     const list = this.#entries.length ? this.#entries : (await this.list())
     let prevHash = GENESIS
     

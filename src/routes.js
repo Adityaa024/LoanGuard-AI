@@ -9,7 +9,6 @@ import { parse } from 'csv-parse/sync'
 import { getDb } from './db/index.js'
 import Anthropic from '@anthropic-ai/sdk'
 import { LoanSchema } from './guard/schema.js'
-import { seedDemoData } from './db/seedDemoData.js'
 
 let anthropicClient = null
 if (process.env.ANTHROPIC_API_KEY) {
@@ -42,21 +41,13 @@ const ROOT = path.resolve(__dirname, '..')
 const USERS_PATH = path.join(ROOT, 'data', 'users.json')
 
 let USERS = [
-  { id: "usr_001", name: "Aditya Raj", email: "aditya.raj@gmail.com", password: "password123", role: "operator", avatar: "AR" },
+  { id: "usr_001", name: "Aditya", email: "aditya.raj@gmail.com", password: "password123", role: "operator", avatar: "A" },
   { id: "usr_002", name: "Rajesh Menon", email: "rajesh.menon@loanguard.ai", password: "password123", role: "reviewer", avatar: "RM" },
-  { id: "usr_003", name: "Alex Morgan", email: "alex.morgan@loanguard.ai", password: "password123", role: "consumer", avatar: "AM" },
-  { id: "usr_004", name: "Ananya Iyer", email: "ananya.iyer@loanguard.ai", password: "password123", role: "consumer", avatar: "AI" }
+  { id: "usr_003", name: "Alex Morgan", email: "alex.morgan@loanguard.ai", password: "password123", role: "consumer", avatar: "AM" }
 ]
 try {
   if (fs.existsSync(USERS_PATH)) {
-    const fileUsers = JSON.parse(fs.readFileSync(USERS_PATH, 'utf8'))
-    if (Array.isArray(fileUsers)) {
-      for (const u of fileUsers) {
-        if (!USERS.some(existing => existing.email === u.email)) {
-          USERS.push(u)
-        }
-      }
-    }
+    USERS = JSON.parse(fs.readFileSync(USERS_PATH, 'utf8'))
   }
 } catch (e) {
   console.warn('[routes] Could not read data/users.json, using built-in users:', e.message)
@@ -104,13 +95,6 @@ export async function registerRoutes(app, { ROOT }) {
   const sys = buildSystem()
   const { orchestrator, guard, audit, events, ledger, backend } = sys
   const engine = backend
-  await audit.init()
-  try {
-    const db = await getDb()
-    await seedDemoData(db)
-  } catch (err) {
-    console.warn('[routes] Auto-seed check failed:', err.message)
-  }
 
   // ---- Live event stream (SSE) ----
   app.get('/events', (req, res) => {
