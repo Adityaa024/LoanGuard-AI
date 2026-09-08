@@ -17,7 +17,15 @@ export async function getDb() {
   if (process.env.DATABASE_URL) {
     try {
       dbInstance = await openPostgres()
-      return dbInstance
+      const postgresLoanCount = await dbInstance.get('SELECT COUNT(*) AS count FROM loans')
+      const packagedDatabaseAvailable = fs.existsSync(DEFAULT_DB_PATH) && fs.statSync(DEFAULT_DB_PATH).size > 1024 * 1024
+      if (Number(postgresLoanCount?.count || 0) === 0 && packagedDatabaseAvailable && process.env.DB_FALLBACK_EMPTY !== 'false') {
+        await dbInstance.close()
+        dbInstance = null
+        console.error('[db] Supabase is reachable but empty; falling back to packaged SQLite data')
+      } else {
+        return dbInstance
+      }
     } catch (error) {
       if (process.env.DB_FALLBACK_SQLITE === 'false') throw error
       console.error(`[db] Supabase unavailable; falling back to SQLite: ${error.code || error.message}`)
